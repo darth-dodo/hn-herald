@@ -237,3 +237,196 @@ def mock_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HN_HERALD_ENV", "development")
     monkeypatch.setenv("HN_HERALD_LOG_LEVEL", "DEBUG")
     monkeypatch.setenv("HN_HERALD_LLM_CACHE_TYPE", "memory")
+
+
+# =============================================================================
+# HN API Client Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def sample_story_data() -> dict[str, Any]:
+    """Sample HN story API response data.
+
+    Returns a complete story response as returned by the HN API
+    /item/{id}.json endpoint.
+
+    Returns:
+        Dictionary matching HN API story response format.
+    """
+    return {
+        "id": 39856302,
+        "type": "story",
+        "by": "testuser",
+        "time": 1709654321,
+        "title": "Test Story Title",
+        "url": "https://example.com/article",
+        "score": 142,
+        "descendants": 85,
+        "kids": [39856400, 39856401],
+    }
+
+
+@pytest.fixture
+def sample_story():
+    """Sample Story model instance.
+
+    Returns a Story model instance for use in tests that need
+    a pre-constructed Story object.
+
+    Returns:
+        Story model instance with test data.
+    """
+    from hn_herald.models.story import Story
+
+    return Story(
+        id=39856302,
+        title="Test Story Title",
+        url="https://example.com/article",
+        score=142,
+        by="testuser",
+        time=1709654321,
+        descendants=85,
+        kids=[39856400, 39856401],
+    )
+
+
+@pytest.fixture
+def mock_story_ids() -> list[int]:
+    """List of mock story IDs for testing.
+
+    Returns:
+        List of 5 story IDs for testing fetch operations.
+    """
+    return [1, 2, 3, 4, 5]
+
+
+@pytest.fixture
+def sample_story_data_minimal() -> dict[str, Any]:
+    """Minimal story data with only required fields.
+
+    Tests that optional fields are handled correctly with defaults.
+
+    Returns:
+        Dictionary with minimal required HN API story fields.
+    """
+    return {
+        "id": 39856303,
+        "type": "story",
+        "by": "minimaluser",
+        "time": 1709654322,
+        "title": "Minimal Story",
+        "score": 50,
+    }
+
+
+@pytest.fixture
+def sample_story_data_ask_hn() -> dict[str, Any]:
+    """Sample Ask HN story without external URL.
+
+    Returns:
+        Dictionary representing an Ask HN post with text but no URL.
+    """
+    return {
+        "id": 39856304,
+        "type": "story",
+        "by": "asker",
+        "time": 1709654323,
+        "title": "Ask HN: What are your favorite testing practices?",
+        "text": "I'm curious about what testing approaches people use...",
+        "score": 75,
+        "descendants": 50,
+        "kids": [39856500, 39856501, 39856502],
+    }
+
+
+@pytest.fixture
+def sample_deleted_story_data() -> dict[str, Any]:
+    """Sample deleted story data.
+
+    Returns:
+        Dictionary representing a deleted HN story.
+    """
+    return {
+        "id": 39856305,
+        "deleted": True,
+    }
+
+
+@pytest.fixture
+def sample_dead_story_data() -> dict[str, Any]:
+    """Sample dead story data.
+
+    Returns:
+        Dictionary representing a dead (flagged) HN story.
+    """
+    return {
+        "id": 39856306,
+        "type": "story",
+        "by": "deaduser",
+        "time": 1709654324,
+        "title": "Dead Story",
+        "score": 10,
+        "dead": True,
+    }
+
+
+@pytest.fixture
+def multiple_stories_data() -> list[dict[str, Any]]:
+    """Multiple stories with varying scores for filtering tests.
+
+    Returns:
+        List of story dictionaries with different scores.
+    """
+    return [
+        {
+            "id": 1,
+            "type": "story",
+            "by": "user1",
+            "time": 1709654321,
+            "title": "High Score Story",
+            "url": "https://example.com/high",
+            "score": 500,
+            "descendants": 100,
+        },
+        {
+            "id": 2,
+            "type": "story",
+            "by": "user2",
+            "time": 1709654322,
+            "title": "Medium Score Story",
+            "url": "https://example.com/medium",
+            "score": 100,
+            "descendants": 50,
+        },
+        {
+            "id": 3,
+            "type": "story",
+            "by": "user3",
+            "time": 1709654323,
+            "title": "Low Score Story",
+            "url": "https://example.com/low",
+            "score": 25,
+            "descendants": 10,
+        },
+        {
+            "id": 4,
+            "type": "story",
+            "by": "user4",
+            "time": 1709654324,
+            "title": "Very Low Score Story",
+            "url": "https://example.com/very-low",
+            "score": 5,
+            "descendants": 2,
+        },
+        {
+            "id": 5,
+            "type": "story",
+            "by": "user5",
+            "time": 1709654325,
+            "title": "Medium-High Score Story",
+            "url": "https://example.com/medium-high",
+            "score": 200,
+            "descendants": 75,
+        },
+    ]

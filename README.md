@@ -96,12 +96,23 @@ Built with modern, production-ready tools:
 ```bash
 make install     # Install dependencies
 make dev         # Start dev server with hot reload
-make test        # Run test suite
+make test        # Run test suite (76 tests)
 make lint        # Run linting
 make typecheck   # Run type checking
 ```
 
-See [docs/architecture.md](docs/architecture.md) for technical details.
+### Project Status
+
+| Component | Status | Description |
+|-----------|--------|-------------|
+| HN API Client | ✅ Complete | Async client with retry logic |
+| Article Extraction | 🔄 Next | WebBaseLoader integration |
+| LLM Summarization | ⏳ Planned | Claude AI integration |
+| Relevance Scoring | ⏳ Planned | Tag-based personalization |
+| API Endpoints | ⏳ Planned | FastAPI REST API |
+| Web UI | ⏳ Planned | HTMX + Tailwind interface |
+
+See [docs/architecture.md](docs/architecture.md) for technical details and [tasks.md](tasks.md) for current progress.
 
 ## Contributing
 

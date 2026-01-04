@@ -76,7 +76,7 @@ git push origin feature/name
 | Session   | Deliverable                    | User Value                 | CI/CD Gate            |
 | --------- | ------------------------------ | -------------------------- | --------------------- |
 | **Setup** | Project scaffolding            | Development ready          | ✅ Complete           |
-| **MVP-1** | HN API client + basic fetch    | Can fetch stories          | ⏳ Unit tests pass    |
+| **MVP-1** | HN API client + basic fetch    | Can fetch stories          | ✅ Complete           |
 | **MVP-2** | Article extraction             | Can read article content   | ⏳ Integration tests  |
 | **MVP-3** | LLM summarization              | Get AI summaries           | ⏳ Mock LLM tests     |
 | **MVP-4** | Relevance scoring              | Personalized ranking       | ⏳ Scoring accuracy   |
@@ -93,18 +93,19 @@ git push origin feature/name
 
 | Task                              | Status | Notes                          |
 | --------------------------------- | ------ | ------------------------------ |
-| None                              | -      | Ready to start MVP-1           |
+| MVP-1 HN API Client               | ✅     | Complete - branch ready for PR |
 
 ### Up Next - Priority Tasks
 
-#### 🟠 High Priority (MVP-1: HN API Client)
+#### 🟠 High Priority (MVP-1: HN API Client) ✅ COMPLETE
 
 | Task                              | Status | Priority | Notes                          |
 | --------------------------------- | ------ | -------- | ------------------------------ |
-| Create models/story.py            | ⏳     | 🟠       | Story Pydantic model           |
-| Create services/hn_client.py      | ⏳     | 🟠       | HN API async client            |
-| Create tests for HN client        | ⏳     | 🟠       | Unit tests with mocks          |
-| Verify HN API fetching works      | ⏳     | 🟠       | Integration test               |
+| Create design document            | ✅     | 🟠       | `docs/design/hn-api-client.md` |
+| Create models/story.py            | ✅     | 🟠       | Story Pydantic model + StoryType enum |
+| Create services/hn_client.py      | ✅     | 🟠       | HN API async client with httpx |
+| Create tests for HN client        | ✅     | 🟠       | 68 unit tests with mocked responses |
+| Verify HN API fetching works      | ✅     | 🟠       | Integration test (marked slow) |
 
 #### 🟡 Medium Priority (MVP-2: Article Extraction)
 
@@ -233,26 +234,106 @@ git push origin feature/name
 - `98157eb` - test: add health endpoint tests and CI/CD setup
 - `d12df06` - chore: remove Codecov integration from CI
 
+### Session Log: 2026-01-04 (Session 3)
+
+**Session Focus**: MVP-1 Design Phase - HN API Client Architecture
+
+**Agent**: Architect
+
+**Key Decisions**:
+1. Use httpx for async HTTP client (already in dependencies)
+2. Use tenacity for retry logic with exponential backoff
+3. StoryType enum for type-safe story type selection
+4. Story Pydantic model with computed `hn_url` property
+5. HNClient as async context manager for proper resource cleanup
+6. Max 10 concurrent requests to respect HN API
+
+**Artifacts Created**:
+- `docs/design/hn-api-client.md` - Comprehensive design document
+
+**Design Highlights**:
+- Complete HN API reference documentation
+- Data models: Story, StoryType, HNClientError hierarchy
+- HNClient interface with async context manager pattern
+- Testing strategy: 14 unit tests + 2 integration tests
+- Error handling matrix with retry strategies
+- Implementation plan: 10 tasks, ~5 hours total
+
+**Quality Gates Passed**:
+- ✅ Requirements clearly defined with acceptance criteria
+- ✅ Architecture supports scalability and maintainability
+- ✅ Data models and interfaces documented
+- ✅ Implementation tasks broken into <4h chunks
+- ✅ Risks identified with mitigation plans
+- ✅ Testing strategy defined
+
+**Next Steps**:
+- [x] Hand off to Developer agent for implementation
+- [x] Create Story model and StoryType enum
+- [x] Implement HNClient with retry logic
+- [x] Write unit tests with mocked responses
+- [x] Write integration test against real HN API
+
+### Session Log: 2026-01-04 (Session 4)
+
+**Session Focus**: MVP-1 Implementation - HN API Client with Parallel Subagents
+
+**Agent**: Developer (3 parallel subagents)
+
+**Key Decisions**:
+1. Used parallel subagents for faster implementation (XP collective ownership)
+2. Story model with computed properties (`hn_url`, `has_external_url`)
+3. StoryType enum with endpoint property for all HN story types
+4. Async HNClient with context manager, retry logic, rate limiting
+5. Exception hierarchy: HNClientError → HNAPIError, HNTimeoutError
+6. Comprehensive unit tests with respx mocking (68 new tests)
+
+**Branch**: `feature/hn-api-client`
+
+**Artifacts Created**:
+- `src/hn_herald/models/story.py` - Story and StoryType models
+- `src/hn_herald/services/hn_client.py` - Async HN API client
+- `tests/test_models/test_story.py` - 33 Story model tests
+- `tests/test_services/test_hn_client.py` - 35 HNClient tests
+- Updated `pyproject.toml` - Added httpx/tenacity to mypy overrides
+- Updated `.pre-commit-config.yaml` - Added httpx/tenacity deps
+
+**Quality Gates Passed**:
+- ✅ 76 tests passing (8 existing + 68 new)
+- ✅ Ruff linting passes
+- ✅ Mypy type checking passes
+- ✅ Pre-commit hooks pass
+
+**Commits**:
+- `58a3582` - feat: implement HN API client with Story model and async HTTP client
+
+**Next Steps**:
+- [ ] Create PR for feature/hn-api-client
+- [ ] Begin MVP-2: Article Extraction
+
 ---
 
 ## Notes for Future Agents
 
 ### Project State
 
-- **Current Phase**: Setup Complete - Ready for MVP-1
-- **Test Coverage**: 79% (8 tests passing)
+- **Current Phase**: MVP-1 Complete - Ready for MVP-2
+- **Test Coverage**: 76 tests passing
 - **CI/CD**: ✅ GitHub Actions configured (lint, typecheck, test, build)
 - **Pre-commit**: ✅ Configured (ruff, mypy, pre-commit-hooks)
 - **Dependencies**: ✅ Installed via `make install`
+- **Design Doc**: ✅ `docs/design/hn-api-client.md`
+- **Feature Branch**: `feature/hn-api-client` pushed to origin
 
 ### Key Files to Review
 
-| File                      | Purpose                                    |
-| ------------------------- | ------------------------------------------ |
-| `docs/product.md`         | Product requirements and user stories      |
-| `docs/architecture.md`    | Technical design and data models           |
-| `tasks.md`                | Current state and task tracking            |
-| `.agentic/config.yml`     | Project configuration for agentic workflow |
+| File                              | Purpose                                    |
+| --------------------------------- | ------------------------------------------ |
+| `docs/product.md`                 | Product requirements and user stories      |
+| `docs/architecture.md`            | Technical design and data models           |
+| `docs/design/hn-api-client.md`    | MVP-1 HN API client design document        |
+| `tasks.md`                        | Current state and task tracking            |
+| `.agentic/config.yml`             | Project configuration for agentic workflow |
 
 ### Technology Stack
 
@@ -278,9 +359,9 @@ git push origin feature/name
 
 | Agent       | In Flow | Standalone | Notes                              |
 | ----------- | ------- | ---------- | ---------------------------------- |
-| Architect   | ✅      | ✅         | Design docs complete               |
-| Developer   | ⏳      | ⏳         | Ready for implementation           |
-| QA          | ⏳      | ⏳         | Waiting for code to test           |
+| Architect   | ✅      | ✅         | MVP-1 design complete              |
+| Developer   | ✅      | ✅         | MVP-1 implementation complete      |
+| QA          | ✅      | ✅         | 76 tests passing                   |
 | Writer      | ⏳      | ⏳         | Docs update after MVP              |
 
 ---
