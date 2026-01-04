@@ -14,12 +14,12 @@ A 12-factor application using FastAPI, HTMX, and LangGraph for AI-powered Hacker
 | 2. Dependencies      | `pyproject.toml` with pinned versions             |
 | 3. Config            | Environment variables via `.env`                  |
 | 4. Backing Services  | HN API, Anthropic API as attached resources       |
-| 5. Build/Release/Run | Docker multi-stage builds                         |
+| 5. Build/Release/Run | Simple Dockerfile with uv                         |
 | 6. Processes         | Stateless FastAPI workers                         |
 | 7. Port Binding      | Self-contained via Uvicorn                        |
 | 8. Concurrency       | Async + process scaling                           |
 | 9. Disposability     | Fast startup/shutdown, graceful termination       |
-| 10. Dev/Prod Parity  | Docker for consistency                            |
+| 10. Dev/Prod Parity  | Same dependencies via uv                          |
 | 11. Logs             | Structured JSON to stdout                         |
 | 12. Admin Processes  | One-off tasks via CLI                             |
 
@@ -100,8 +100,7 @@ sequenceDiagram
 hn-herald/
 ├── pyproject.toml          # Dependencies, project metadata
 ├── Makefile                 # Development commands
-├── Dockerfile               # Multi-stage production build
-├── docker-compose.yml       # Local development
+├── Dockerfile               # Simple production build
 ├── .env.example             # Environment template
 ├── README.md
 ├── product.md               # Product requirements
@@ -686,16 +685,35 @@ make test-cov   # With coverage
 
 ## Deployment
 
-### Docker Build
+### Simple Dockerfile
 
 ```dockerfile
-# Multi-stage build
-FROM python:3.12-slim AS builder
-# Install uv, dependencies
+FROM python:3.12-slim
 
-FROM python:3.12-slim AS runtime
-# Copy only what's needed
-# Run as non-root user
+# Install uv for fast dependency management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /app
+COPY pyproject.toml .
+RUN uv sync --frozen
+
+COPY src/ src/
+EXPOSE 8000
+
+CMD ["uv", "run", "uvicorn", "hn_herald.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### Local Development
+
+```bash
+# Install dependencies
+uv sync
+
+# Run development server
+uv run uvicorn hn_herald.main:app --reload
+
+# Or use Makefile
+make dev
 ```
 
 ### Production Checklist
@@ -704,7 +722,6 @@ FROM python:3.12-slim AS runtime
 - [ ] HN_HERALD_ENV=production
 - [ ] Logging configured
 - [ ] Health checks working
-- [ ] Error tracking configured
 
 ---
 
@@ -739,6 +756,5 @@ FROM python:3.12-slim AS runtime
 ### Phase 5: Testing & Polish
 
 15. `tests/` - Test suite
-16. `Dockerfile` - Container
-17. `docker-compose.yml` - Local dev
-18. Update `README.md`
+16. `Dockerfile` - Simple container
+17. Update `README.md`
