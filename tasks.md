@@ -77,7 +77,7 @@ git push origin feature/name
 | --------- | ------------------------------ | -------------------------- | --------------------- |
 | **Setup** | Project scaffolding            | Development ready          | ✅ Complete           |
 | **MVP-1** | HN API client + basic fetch    | Can fetch stories          | ✅ Complete           |
-| **MVP-2** | Article extraction             | Can read article content   | ⏳ Integration tests  |
+| **MVP-2** | Article extraction             | Can read article content   | ✅ Complete           |
 | **MVP-3** | LLM summarization              | Get AI summaries           | ⏳ Mock LLM tests     |
 | **MVP-4** | Relevance scoring              | Personalized ranking       | ⏳ Scoring accuracy   |
 | **MVP-5** | FastAPI endpoints              | API is callable            | ⏳ API contract tests |
@@ -107,14 +107,24 @@ git push origin feature/name
 | Create tests for HN client        | ✅     | 🟠       | 68 unit tests with mocked responses |
 | Verify HN API fetching works      | ✅     | 🟠       | Integration test (marked slow) |
 
-#### 🟡 Medium Priority (MVP-2: Article Extraction)
+#### 🟡 Medium Priority (MVP-2: Article Extraction) ✅ COMPLETE
 
 | Task                              | Status | Priority | Notes                          |
 | --------------------------------- | ------ | -------- | ------------------------------ |
-| Create models/article.py          | ⏳     | 🟡       | Article Pydantic model         |
-| Create services/loader.py         | ⏳     | 🟡       | WebBaseLoader + text splitter  |
-| Handle problematic domains        | ⏳     | 🟡       | Skip Twitter, Reddit, etc.     |
-| Add extraction tests              | ⏳     | 🟡       | Mock external URLs             |
+| Create models/article.py          | ✅     | 🟡       | Article Pydantic model         |
+| Create services/loader.py         | ✅     | 🟡       | WebBaseLoader + text splitter  |
+| Handle problematic domains        | ✅     | 🟡       | Skip Twitter, Reddit, etc.     |
+| Add extraction tests              | ✅     | 🟡       | Mock external URLs             |
+
+#### 🟡 Medium Priority (MVP-3: LLM Summarization)
+
+| Task                              | Status | Priority | Notes                          |
+| --------------------------------- | ------ | -------- | ------------------------------ |
+| Create design document            | ⏳     | 🟡       | `docs/design/llm-summarization.md` |
+| Create ArticleSummary model       | ⏳     | 🟡       | models/summary.py              |
+| Create services/llm.py            | ⏳     | 🟡       | Claude integration via Anthropic SDK |
+| Write integration tests           | ⏳     | 🟡       | Real LLM calls (no mocking)    |
+| Verify summarization works        | ⏳     | 🟡       | Test with real articles        |
 
 ---
 
@@ -311,19 +321,48 @@ git push origin feature/name
 - [ ] Create PR for feature/hn-api-client
 - [ ] Begin MVP-2: Article Extraction
 
+### Session Log: 2026-01-04 (Session 5)
+
+**Session Focus**: MVP-3 Design Phase - LLM Summarization
+
+**Agent**: Architect
+
+**Key Decisions**:
+1. Using real LLM calls for integration tests (no mocking)
+2. Claude integration via Anthropic SDK
+3. ArticleSummary model for structured summary output
+4. services/llm.py for LLM service abstraction
+
+**Artifacts Planned**:
+- `docs/design/llm-summarization.md` - Design document
+- `src/hn_herald/models/summary.py` - ArticleSummary Pydantic model
+- `src/hn_herald/services/llm.py` - Claude integration service
+- Integration tests with real LLM calls
+
+**Quality Gates**:
+- [ ] Design document reviewed
+- [ ] Integration tests pass with real LLM
+- [ ] Summarization produces useful output
+
+**Next Steps**:
+- [ ] Create design document for LLM summarization
+- [ ] Implement ArticleSummary model
+- [ ] Implement services/llm.py with Claude integration
+- [ ] Write and run integration tests
+
 ---
 
 ## Notes for Future Agents
 
 ### Project State
 
-- **Current Phase**: MVP-1 Complete - Ready for MVP-2
-- **Test Coverage**: 76 tests passing
+- **Current Phase**: MVP-2 Complete - Ready for MVP-3
+- **Test Coverage**: Tests passing (unit + E2E via Playwright MCP)
 - **CI/CD**: ✅ GitHub Actions configured (lint, typecheck, test, build)
 - **Pre-commit**: ✅ Configured (ruff, mypy, pre-commit-hooks)
 - **Dependencies**: ✅ Installed via `make install`
-- **Design Doc**: ✅ `docs/design/hn-api-client.md`
-- **Feature Branch**: `feature/hn-api-client` pushed to origin
+- **Design Docs**: ✅ `docs/design/hn-api-client.md`, `docs/design/article-extraction.md`
+- **Completed Artifacts**: `models/story.py`, `models/article.py`, `services/hn_client.py`, `services/loader.py`
 
 ### Key Files to Review
 
