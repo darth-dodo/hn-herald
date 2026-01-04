@@ -116,15 +116,24 @@ git push origin feature/name
 | Handle problematic domains        | ✅     | 🟡       | Skip Twitter, Reddit, etc.     |
 | Add extraction tests              | ✅     | 🟡       | Mock external URLs             |
 
-#### 🟡 Medium Priority (MVP-3: LLM Summarization)
+#### 🟡 Medium Priority (MVP-3: LLM Summarization) ✅ COMPLETE
 
 | Task                              | Status | Priority | Notes                          |
 | --------------------------------- | ------ | -------- | ------------------------------ |
-| Create design document            | ⏳     | 🟡       | `docs/design/llm-summarization.md` |
-| Create ArticleSummary model       | ⏳     | 🟡       | models/summary.py              |
-| Create services/llm.py            | ⏳     | 🟡       | Claude integration via Anthropic SDK |
-| Write integration tests           | ⏳     | 🟡       | Real LLM calls (no mocking)    |
-| Verify summarization works        | ⏳     | 🟡       | Test with real articles        |
+| Create design document            | ✅     | 🟡       | `docs/design/03-llm-summarization.md` |
+| Create ArticleSummary model       | ✅     | 🟡       | models/summary.py + BatchArticleSummary |
+| Create services/llm.py            | ✅     | 🟡       | LangChain-Anthropic with batch support |
+| Write integration tests           | ✅     | 🟡       | 11 tests with real LLM calls   |
+| Verify summarization works        | ✅     | 🟡       | Single + batch summarization working |
+
+#### 🟢 Low Priority (MVP-4: Relevance Scoring)
+
+| Task                              | Status | Priority | Notes                          |
+| --------------------------------- | ------ | -------- | ------------------------------ |
+| Create design document            | ⏳     | 🟢       | `docs/design/04-relevance-scoring.md` |
+| Create scoring models             | ⏳     | 🟢       | Relevance scoring logic        |
+| Implement user preference matching| ⏳     | 🟢       | Tag-based personalization      |
+| Write scoring tests               | ⏳     | 🟢       | Unit + integration tests       |
 
 ---
 
