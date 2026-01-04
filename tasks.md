@@ -93,7 +93,7 @@ git push origin feature/name
 
 | Task                              | Status | Notes                          |
 | --------------------------------- | ------ | ------------------------------ |
-| Install dependencies              | ⏳     | Run `make install` to sync     |
+| None                              | -      | Ready to start MVP-1           |
 
 ### Up Next - Priority Tasks
 
@@ -143,6 +143,15 @@ git push origin feature/name
 | Create package structure          | ✅     | api/graph/services/models dirs |
 | Create tests/conftest.py          | ✅     | Pytest fixtures                |
 
+### Phase 1: Testing & CI/CD ✅
+
+| Task                              | Status | Notes                          |
+| --------------------------------- | ------ | ------------------------------ |
+| Write health endpoint tests       | ✅     | 8 tests, 79% coverage          |
+| Setup pre-commit hooks            | ✅     | ruff, mypy, pre-commit-hooks   |
+| Setup GitHub Actions CI/CD        | ✅     | lint, typecheck, test, build   |
+| Update README (product-focused)   | ✅     | Features, quick start, privacy |
+
 ---
 
 ## Task History Archive
@@ -191,9 +200,38 @@ git push origin feature/name
 - All placeholder files created
 
 **Next Steps**:
-- [ ] Run `make install` to sync dependencies
-- [ ] Run `make test` to verify setup
+- [x] Run `make install` to sync dependencies
+- [x] Run `make test` to verify setup
 - [ ] Begin MVP-1: HN API Client
+
+### Session Log: 2026-01-04 (Session 2)
+
+**Session Focus**: Testing Infrastructure & CI/CD Setup
+
+**Key Decisions**:
+1. Health endpoint tests use pytest fixtures with env vars set before imports
+2. Pre-commit hooks with ruff (lint + format) and mypy
+3. GitHub Actions CI with 4 jobs: lint, typecheck, test, build
+4. No Codecov integration (not needed)
+
+**Branch**: `feature/project-setup` (continued)
+
+**Artifacts Created**:
+- `tests/test_api.py` - Health endpoint tests (8 tests)
+- `.pre-commit-config.yaml` - Pre-commit hooks configuration
+- `.github/workflows/ci.yml` - GitHub Actions CI pipeline
+- Updated `README.md` - Product-focused documentation
+
+**Quality Gates Passed**:
+- ✅ All 8 tests passing
+- ✅ 79% test coverage (threshold: 70%)
+- ✅ Ruff linting passes
+- ✅ Ruff formatting passes
+
+**Commits**:
+- `1a095ef` - feat: complete project setup with FastAPI scaffolding
+- `98157eb` - test: add health endpoint tests and CI/CD setup
+- `d12df06` - chore: remove Codecov integration from CI
 
 ---
 
@@ -202,10 +240,10 @@ git push origin feature/name
 ### Project State
 
 - **Current Phase**: Setup Complete - Ready for MVP-1
-- **Test Coverage**: 0% (fixtures ready, no tests yet)
-- **CI/CD**: Not configured yet
-- **Pre-commit**: Not installed yet
-- **Dependencies**: Run `make install` to sync
+- **Test Coverage**: 79% (8 tests passing)
+- **CI/CD**: ✅ GitHub Actions configured (lint, typecheck, test, build)
+- **Pre-commit**: ✅ Configured (ruff, mypy, pre-commit-hooks)
+- **Dependencies**: ✅ Installed via `make install`
 
 ### Key Files to Review
 
