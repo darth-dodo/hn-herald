@@ -126,9 +126,9 @@ Each session delivers a shippable increment:
 
 | Session | Deliverable | User Value | CI/CD Gate |
 |---------|-------------|------------|------------|
-| **MVP-1** | HN API client + basic fetch | Can fetch stories | ✅ Unit tests pass |
-| **MVP-2** | Article extraction | Can read article content | ✅ Integration tests |
-| **MVP-3** | LLM summarization | Get AI summaries | ✅ Mock LLM tests |
+| **MVP-1** | HN API client + basic fetch | Can fetch stories | ✅ Complete |
+| **MVP-2** | Article extraction | Can read article content | ✅ Complete |
+| **MVP-3** | LLM summarization | Get AI summaries | 🔄 In Progress |
 | **MVP-4** | Relevance scoring | Personalized ranking | ✅ Scoring accuracy |
 | **MVP-5** | FastAPI endpoints | API is callable | ✅ API contract tests |
 | **MVP-6** | HTMX templates | Usable web UI | ✅ E2E smoke tests |
