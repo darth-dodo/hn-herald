@@ -158,7 +158,7 @@ hn-herald/
 │       │   ├── __init__.py
 │       │   ├── hn_client.py         # HackerNews API client ✅
 │       │   ├── loader.py            # ArticleLoader service ✅
-│       │   ├── llm.py               # Anthropic Claude wrapper
+│       │   ├── llm.py               # LLM summarization service ✅
 │       │   └── cache.py             # LangChain caching setup
 │       │
 │       ├── callbacks/
@@ -169,7 +169,8 @@ hn-herald/
 │           ├── __init__.py
 │           ├── profile.py   # UserProfile Pydantic model
 │           ├── story.py     # Story model ✅
-│           └── article.py   # Article model ✅
+│           ├── article.py   # Article model ✅
+│           └── summary.py   # LLM summarization models ✅
 │
 ├── tests/
 │   ├── __init__.py
@@ -212,6 +213,7 @@ hn-herald/
 | Callbacks       | LangChain Callbacks       | Progress streaming to frontend   |
 | Document Loading| WebBaseLoader             | Article content extraction       |
 | Text Processing | RecursiveCharacterSplitter| Smart chunking for long articles |
+| Summarization   | LLMService (MVP-3)        | Batch article summarization ✅   |
 
 ### Frontend
 
@@ -523,6 +525,50 @@ client = Client()
 - Replay traces for testing
 - Monitor production performance
 
+### LLM Summarization Service (MVP-3 Complete)
+
+The LLM service provides batch article summarization using LangChain-Anthropic.
+
+```python
+from langchain_anthropic import ChatAnthropic
+from hn_herald.models.summary import (
+    ArticleSummary,
+    BatchArticleSummary,
+    SummarizedArticle,
+    SummarizationStatus,
+)
+
+class LLMService:
+    """LLM service for article summarization."""
+
+    def __init__(self, model: str = "claude-sonnet-4-20250514"):
+        self.llm = ChatAnthropic(model=model, temperature=0)
+
+    async def summarize_article(
+        self, story_id: int, title: str, url: str, content: str
+    ) -> SummarizedArticle:
+        """Summarize a single article."""
+        # Returns SummarizedArticle with status tracking
+
+    async def summarize_batch(
+        self, articles: list[tuple[int, str, str, str]]
+    ) -> BatchArticleSummary:
+        """Summarize multiple articles in batch."""
+        # Processes articles concurrently with error isolation
+```
+
+**Key Features**:
+- **Batch Processing**: Efficient concurrent summarization of multiple articles
+- **Error Isolation**: Individual article failures do not affect batch processing
+- **Status Tracking**: Per-article status (success/failed/skipped)
+- **Structured Output**: Type-safe Pydantic models for all responses
+- **Configurable Model**: Defaults to Claude Sonnet 4
+
+**Integration Points**:
+- Called by `summarizer.py` node in LangGraph pipeline
+- Uses `ArticleSummary` for individual summaries
+- Returns `BatchArticleSummary` with processing statistics
+
 ### Caching
 
 Reduce API costs and latency with intelligent caching.
@@ -545,30 +591,52 @@ set_llm_cache(SQLiteCache(database_path=".cache/llm_cache.db"))
 
 ### Output Parsers
 
-Structured, validated output from LLM responses.
+Structured, validated output from LLM responses. The summarization system uses Pydantic models with LangChain-Anthropic integration for type-safe batch processing.
 
 ```python
-from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
+from enum import Enum
+
+class SummarizationStatus(str, Enum):
+    """Status of article summarization."""
+    SUCCESS = "success"
+    FAILED = "failed"
+    SKIPPED = "skipped"
 
 class ArticleSummary(BaseModel):
+    """Summary output for a single article."""
     summary: str = Field(description="2-3 sentence summary")
-    key_points: list[str] = Field(description="3 key takeaways")
-    tech_tags: list[str] = Field(description="Relevant technology tags")
+    key_points: list[str] = Field(description="3 key takeaways", default_factory=list)
+    tech_tags: list[str] = Field(description="Relevant technology tags", default_factory=list)
 
-parser = PydanticOutputParser(pydantic_object=ArticleSummary)
+class SummarizedArticle(BaseModel):
+    """Article with summarization result and status tracking."""
+    story_id: int
+    title: str
+    url: str
+    summary: ArticleSummary | None = None
+    status: SummarizationStatus = SummarizationStatus.SUCCESS
+    error: str | None = None
 
-prompt = f"""Summarize this article.
-{parser.get_format_instructions()}
-
-Article: {{content}}"""
+class BatchArticleSummary(BaseModel):
+    """Batch summarization response for multiple articles."""
+    articles: list[SummarizedArticle]
+    total_processed: int
+    successful: int
+    failed: int
 ```
 
+**Implementation Details** (MVP-3 Complete):
+- LangChain-Anthropic integration with Claude Sonnet 4
+- Batch summarization support for efficient API usage
+- Status tracking per article (success/failed/skipped)
+- Graceful error handling with individual article failure isolation
+
 **Benefits**:
-- Type-safe LLM outputs
-- Automatic validation
+- Type-safe LLM outputs with comprehensive status tracking
+- Automatic validation via Pydantic
 - Clear error messages on parse failures
-- Consistent JSON structure
+- Consistent JSON structure with batch processing support
 
 ### Callbacks (Progress Streaming)
 
@@ -985,11 +1053,11 @@ make dev
 4. `src/hn_herald/config.py` - Settings
 5. `src/hn_herald/main.py` - FastAPI app
 
-### Phase 2: Models & Services
+### Phase 2: Models & Services ✅
 
-6. `src/hn_herald/models/*.py` - Pydantic models
-7. `src/hn_herald/services/hn_client.py` - HN API client
-8. `src/hn_herald/services/llm.py` - Claude wrapper
+6. `src/hn_herald/models/*.py` - Pydantic models ✅
+7. `src/hn_herald/services/hn_client.py` - HN API client ✅
+8. `src/hn_herald/services/llm.py` - LLM summarization service ✅
 
 ### Phase 3: LangGraph Pipeline
 

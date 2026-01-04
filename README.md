@@ -107,8 +107,8 @@ make typecheck   # Run type checking
 |-----------|--------|-------------|
 | HN API Client | ✅ Complete | Async client with retry logic |
 | Article Extraction | ✅ Complete | ArticleLoader with blocked domains, content extraction |
-| LLM Summarization | 🔄 Next | Claude AI integration |
-| Relevance Scoring | ⏳ Planned | Tag-based personalization |
+| LLM Summarization | ✅ Complete | LangChain-Anthropic with batch support |
+| Relevance Scoring | 🔄 Next | Tag-based personalization |
 | API Endpoints | ⏳ Planned | FastAPI REST API |
 | Web UI | ⏳ Planned | HTMX + Tailwind interface |
 
