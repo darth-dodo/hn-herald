@@ -159,13 +159,13 @@ ignore = [
     "D106",   # Missing docstring in public nested class
     "D203",   # 1 blank line required before class docstring (conflicts with D211)
     "D213",   # Multi-line docstring summary should start at the second line (conflicts with D212)
-    "ANN101", # Missing type annotation for self in method
-    "ANN102", # Missing type annotation for cls in classmethod
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
     "COM812", # Trailing comma missing (conflicts with formatter)
     "ISC001", # Implicit string concatenation (conflicts with formatter)
     "S101",   # Use of assert detected (needed for tests)
+    "S104",   # Possible binding to all interfaces (intentional for Docker)
     "PLR0913", # Too many arguments to function call
+    "PLC0415", # Import should be at top level (needed for test fixtures)
     "D107",   # Missing docstring in __init__
 ]
 

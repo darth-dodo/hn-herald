@@ -5,9 +5,9 @@ health checks, and template rendering.
 """
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,7 +33,7 @@ STATIC_DIR = BASE_DIR / "static"
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan manager for startup and shutdown events."""
     # Startup
     logger.info(f"Starting HN Herald v{__version__} in {settings.env} mode")

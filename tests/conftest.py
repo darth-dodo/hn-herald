@@ -4,11 +4,19 @@ Provides reusable fixtures for testing including sample profiles,
 mock API responses, and test clients.
 """
 
+import os
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
+
+# Set test environment variables BEFORE any imports from hn_herald
+# This is necessary because pydantic-settings validates on import
+os.environ.setdefault("ANTHROPIC_API_KEY", "test-api-key-for-testing")
+os.environ.setdefault("HN_HERALD_ENV", "development")
+os.environ.setdefault("HN_HERALD_LOG_LEVEL", "DEBUG")
+os.environ.setdefault("HN_HERALD_LLM_CACHE_TYPE", "memory")
 
 
 @pytest.fixture
