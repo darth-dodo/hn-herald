@@ -862,6 +862,115 @@ logger.info("Summarized %d articles (%d success, %d failed)", total, success, fa
 
 ---
 
+## Batch Summarization Algorithm
+
+### Overview
+
+Batch summarization processes multiple articles in a single LLM call for efficiency. This reduces API costs and latency compared to sequential calls.
+
+### Algorithm Flow
+
+```mermaid
+flowchart TD
+    A[Input: Article List] --> B{Empty list?}
+    B -->|Yes| C[Return empty list]
+    B -->|No| D[Prepare Batch]
+
+    D --> E[Separate articles with/without content]
+    E --> F[Mark NO_CONTENT for empty articles]
+    E --> G[Collect articles with content]
+
+    G --> H{Any articles with content?}
+    H -->|No| I[Return NO_CONTENT results]
+    H -->|Yes| J[Build Batch Prompt]
+
+    J --> K[Call LLM with batch prompt]
+    K --> L{Success?}
+
+    L -->|Yes| M[Parse BatchArticleSummary]
+    M --> N[Map summaries to original positions]
+    N --> O[Fill missing with PARSE_ERROR]
+
+    L -->|Rate Limit| P[Fill all with API_ERROR]
+    L -->|API Error| P
+    L -->|Parse Error| Q[Fill all with PARSE_ERROR]
+
+    O --> R[Return results in original order]
+    P --> R
+    Q --> R
+    I --> R
+```
+
+### Batch Prompt Structure
+
+```
+You are a technical content summarizer for HackerNews articles.
+
+Summarize each of the following articles. For each article, provide:
+1. A concise 2-3 sentence summary capturing the main points
+2. Exactly 3 key takeaways as bullet points
+3. Relevant technology/topic tags (e.g., Python, AI, Security, DevOps)
+
+---
+**Article 1**
+**Title**: Python 3.13 Performance Improvements
+**Content**:
+The Python core development team has released...
+---
+
+---
+**Article 2**
+**Title**: Building Production-Ready LLM Applications
+**Content**:
+Deploying large language models in production...
+---
+
+{format_instructions for BatchArticleSummary}
+```
+
+### BatchArticleSummary Model
+
+```python
+class BatchArticleSummary(BaseModel):
+    """Batch of LLM-generated summaries for multiple articles."""
+
+    summaries: list[ArticleSummary] = Field(
+        ...,
+        description="List of summaries in same order as input articles",
+    )
+```
+
+### Key Implementation Details
+
+1. **Order Preservation**: Results maintain input order via index tracking
+2. **Mixed Content Handling**: Articles without content get NO_CONTENT status before batch call
+3. **Partial Failure**: If LLM returns fewer summaries, missing ones get PARSE_ERROR
+4. **Error Isolation**: API errors mark all pending articles as failed, but NO_CONTENT results are preserved
+
+### Helper Methods
+
+| Method | Purpose |
+|--------|---------|
+| `_prepare_batch()` | Separate articles with/without content, initialize results array |
+| `_process_batch()` | Execute LLM call and handle success/error cases |
+| `_map_batch_results()` | Map parsed summaries back to original positions |
+| `_fill_error_results()` | Fill remaining slots with error status |
+
+### Performance Comparison
+
+| Approach | API Calls | Latency (10 articles) | Cost |
+|----------|-----------|----------------------|------|
+| Sequential | N | ~100-150s | N × base |
+| Batch | 1 | ~15-20s | ~1.5 × base |
+
+### Limitations
+
+1. **Context Window**: Batch size limited by model context window
+2. **All-or-Nothing Parse**: If batch parse fails, all articles in batch fail
+3. **No Partial Retry**: Failed batch doesn't retry individual articles
+
+---
+
 ## Future Enhancements
 
 1. **Streaming Responses**: Stream summaries as they generate for faster perceived performance
@@ -869,8 +978,8 @@ logger.info("Summarized %d articles (%d success, %d failed)", total, success, fa
 3. **Custom Summarization Styles**: User-configurable summary length and style
 4. **Relevance Pre-filtering**: Use embeddings to filter irrelevant articles before summarization
 5. **Summary Quality Scoring**: Evaluate summary quality and regenerate if needed
-6. **Batch Optimization**: Combine multiple articles in single prompt for efficiency
-7. **Fallback Models**: Use cheaper/faster models for retry attempts
+6. **Fallback Models**: Use cheaper/faster models for retry attempts
+7. **Chunked Batching**: Split large article sets into optimal batch sizes
 
 ---
 
