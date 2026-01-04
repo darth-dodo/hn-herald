@@ -21,13 +21,15 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 # Set working directory
 WORKDIR /app
 
-# Copy dependency files and source for installation
+# Copy all necessary files for installation
 COPY pyproject.toml .
 COPY uv.lock* .
+COPY README.md .
 COPY src/ src/
 
 # Create venv and install the package (production dependencies only)
-RUN uv venv && uv pip install .
+# Using --system to install into the container's Python environment
+RUN uv pip install --system .
 
 # Expose the application port
 EXPOSE 8000
@@ -35,4 +37,4 @@ EXPOSE 8000
 # Run the FastAPI application with uvicorn
 # --host 0.0.0.0 allows connections from outside the container
 # --port 8000 matches the exposed port
-CMD ["uv", "run", "uvicorn", "hn_herald.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "hn_herald.main:app", "--host", "0.0.0.0", "--port", "8000"]
