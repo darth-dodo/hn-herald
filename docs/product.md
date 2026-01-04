@@ -108,40 +108,74 @@ A **privacy-first**, personalized HackerNews digest that fetches top stories, su
 
 ## Roadmap Features
 
+### XP Development Approach
+
+We follow **Extreme Programming (XP)** principles with continuous integration and deployment:
+
+- **Small Releases**: Each iteration delivers working, deployable software
+- **Continuous Integration**: All code merged to main daily with automated tests
+- **Test-Driven Development**: Tests written before implementation
+- **Simple Design**: Build only what's needed now, refactor as we learn
+- **Pair Programming**: Complex features developed collaboratively
+- **Collective Ownership**: Any team member can modify any code
+- **Sustainable Pace**: Consistent velocity without burnout
+
+### Session Plan
+
+Each session delivers a shippable increment:
+
+| Session | Deliverable | User Value | CI/CD Gate |
+|---------|-------------|------------|------------|
+| **MVP-1** | HN API client + basic fetch | Can fetch stories | ✅ Unit tests pass |
+| **MVP-2** | Article extraction | Can read article content | ✅ Integration tests |
+| **MVP-3** | LLM summarization | Get AI summaries | ✅ Mock LLM tests |
+| **MVP-4** | Relevance scoring | Personalized ranking | ✅ Scoring accuracy |
+| **MVP-5** | FastAPI endpoints | API is callable | ✅ API contract tests |
+| **MVP-6** | HTMX templates | Usable web UI | ✅ E2E smoke tests |
+| **MVP-7** | Tag system UI | Can select interests | ✅ Component tests |
+| **MVP-8** | Mobile polish | Works on phones | ✅ Lighthouse >90 |
+| **2.1** | Comment fetching | See discussions | ✅ API tests |
+| **2.2** | Sentiment analysis | Discussion quality | ✅ Accuracy tests |
+| **3.1** | Click tracking | Usage analytics | ✅ Privacy audit |
+| **3.2** | Interest learning | Smarter recommendations | ✅ ML validation |
+| **4.1** | Vector storage | Searchable history | ✅ Query tests |
+| **4.2** | Semantic search | Find past articles | ✅ Relevance tests |
+| **5.1** | Reddit source | More content | ✅ Source tests |
+| **5.2** | Deduplication | No repeats | ✅ Dedupe accuracy |
+| **6.1** | Email delivery | Inbox digests | ✅ Delivery tests |
+| **6.2** | RSS feeds | Feed readers | ✅ Feed validation |
+
+### CI/CD Pipeline
+
 ```mermaid
-gantt
-    title HN Herald Development Roadmap
-    dateFormat YYYY-MM-DD
-    axisFormat %b
-
-    section MVP
-    Core Pipeline           :done, mvp1, 2025-01-04, 2w
-    FastAPI + HTMX UI       :done, mvp2, after mvp1, 1w
-    Mobile-First Design     :done, mvp3, after mvp2, 1w
-
-    section Phase 2
-    Comment Fetching        :p2a, after mvp3, 1w
-    Sentiment Analysis      :p2b, after p2a, 1w
-    Discussion Quality      :p2c, after p2b, 1w
-
-    section Phase 3
-    Click Tracking          :p3a, after p2c, 1w
-    Interest Learning       :p3b, after p3a, 2w
-    Embedding System        :p3c, after p3b, 1w
-
-    section Phase 4
-    Vector Database         :p4a, after p3c, 1w
-    Semantic Search         :p4b, after p4a, 2w
-
-    section Phase 5
-    Reddit Integration      :p5a, after p4b, 1w
-    Lobsters Integration    :p5b, after p5a, 1w
-    Deduplication           :p5c, after p5b, 1w
-
-    section Phase 6
-    Email Delivery          :p6a, after p5c, 1w
-    RSS Feeds               :p6b, after p6a, 1w
+flowchart LR
+    subgraph Dev[Development]
+        A[Code] --> B[Pre-commit hooks]
+    end
+    subgraph CI[Continuous Integration]
+        C[Lint + Format] --> D[Unit Tests]
+        D --> E[Integration Tests]
+        E --> F[Build Docker]
+    end
+    subgraph CD[Continuous Deployment]
+        G[Deploy Staging] --> H[E2E Tests]
+        H --> I[Deploy Production]
+    end
+    Dev --> CI --> CD
 ```
+
+### Definition of Done
+
+Every iteration must pass before merge:
+
+- [ ] All tests passing (unit, integration, E2E)
+- [ ] Code reviewed and approved
+- [ ] No decrease in test coverage
+- [ ] Lighthouse performance score ≥90
+- [ ] Documentation updated
+- [ ] Docker image builds successfully
+- [ ] Deploys to staging without errors
+- [ ] Manual QA verification on mobile
 
 ### Phase 2: Comment Analysis
 
