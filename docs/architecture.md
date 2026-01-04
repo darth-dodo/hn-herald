@@ -156,10 +156,10 @@ hn-herald/
 │       │
 │       ├── services/
 │       │   ├── __init__.py
-│       │   ├── hn_client.py         # HackerNews API client
+│       │   ├── hn_client.py         # HackerNews API client ✅
+│       │   ├── loader.py            # ArticleLoader service ✅
 │       │   ├── llm.py               # Anthropic Claude wrapper
-│       │   ├── cache.py             # LangChain caching setup
-│       │   └── loader.py            # Document loader + text splitter
+│       │   └── cache.py             # LangChain caching setup
 │       │
 │       ├── callbacks/
 │       │   ├── __init__.py
@@ -168,19 +168,17 @@ hn-herald/
 │       └── models/
 │           ├── __init__.py
 │           ├── profile.py   # UserProfile Pydantic model
-│           ├── story.py     # Story model
-│           └── article.py   # Article model
+│           ├── story.py     # Story model ✅
+│           └── article.py   # Article model ✅
 │
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py          # Pytest fixtures
-│   ├── test_api/
-│   │   └── test_routes.py
-│   ├── test_graph/
-│   │   ├── test_nodes.py
-│   │   └── test_pipeline.py
-│   └── test_services/
-│       └── test_hn_client.py
+│   ├── unit/
+│   │   ├── models/          # Model tests ✅
+│   │   └── services/        # Service tests ✅
+│   ├── integration/         # Integration tests ✅
+│   └── e2e/                 # E2E tests with Playwright ✅
 │
 └── scripts/
     ├── dev.sh               # Development startup
@@ -879,10 +877,12 @@ async def fetch_with_retry(url: str) -> httpx.Response:
 - API endpoint responses
 - HTMX partial rendering
 
-### E2E Tests (future)
+### E2E Tests
 
-- Playwright for browser testing
-- Mobile viewport testing
+- Playwright pytest tests (`tests/e2e/test_article_extraction_e2e.py`)
+- Manual Playwright MCP tests (`docs/e2e-tests.md`)
+- Full pipeline tests: HN API → Article Extraction
+- Mobile viewport testing (375x667)
 
 ### Test Fixtures
 

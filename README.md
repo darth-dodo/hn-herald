@@ -96,7 +96,7 @@ Built with modern, production-ready tools:
 ```bash
 make install     # Install dependencies
 make dev         # Start dev server with hot reload
-make test        # Run test suite (76 tests)
+make test        # Run test suite (150+ tests)
 make lint        # Run linting
 make typecheck   # Run type checking
 ```
@@ -106,8 +106,8 @@ make typecheck   # Run type checking
 | Component | Status | Description |
 |-----------|--------|-------------|
 | HN API Client | ✅ Complete | Async client with retry logic |
-| Article Extraction | 🔄 Next | WebBaseLoader integration |
-| LLM Summarization | ⏳ Planned | Claude AI integration |
+| Article Extraction | ✅ Complete | ArticleLoader with blocked domains, content extraction |
+| LLM Summarization | 🔄 Next | Claude AI integration |
 | Relevance Scoring | ⏳ Planned | Tag-based personalization |
 | API Endpoints | ⏳ Planned | FastAPI REST API |
 | Web UI | ⏳ Planned | HTMX + Tailwind interface |
