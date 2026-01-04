@@ -7,6 +7,8 @@ from hn_herald.models.article import (
     ArticleParseError,
     ExtractionStatus,
 )
+from hn_herald.models.profile import UserProfile
+from hn_herald.models.scoring import RelevanceScore, ScoredArticle
 from hn_herald.models.story import Story, StoryType
 from hn_herald.models.summary import (
     ArticleSummary,
@@ -31,8 +33,11 @@ __all__ = [
     "LLMParseError",
     "LLMRateLimitError",
     "LLMServiceError",
+    "RelevanceScore",
+    "ScoredArticle",
     "Story",
     "StoryType",
     "SummarizationStatus",
     "SummarizedArticle",
+    "UserProfile",
 ]

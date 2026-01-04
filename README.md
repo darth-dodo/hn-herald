@@ -96,7 +96,7 @@ Built with modern, production-ready tools:
 ```bash
 make install     # Install dependencies
 make dev         # Start dev server with hot reload
-make test        # Run test suite (150+ tests)
+make test        # Run test suite (346 tests)
 make lint        # Run linting
 make typecheck   # Run type checking
 ```
@@ -108,8 +108,8 @@ make typecheck   # Run type checking
 | HN API Client | ✅ Complete | Async client with retry logic |
 | Article Extraction | ✅ Complete | ArticleLoader with blocked domains, content extraction |
 | LLM Summarization | ✅ Complete | LangChain-Anthropic with batch support |
-| Relevance Scoring | 🔄 Next | Tag-based personalization |
-| API Endpoints | ⏳ Planned | FastAPI REST API |
+| Relevance Scoring | ✅ Complete | Tag-based personalization with 186 tests |
+| API Endpoints | 🔄 Next | FastAPI REST API |
 | Web UI | ⏳ Planned | HTMX + Tailwind interface |
 
 See [docs/architecture.md](docs/architecture.md) for technical details and [tasks.md](tasks.md) for current progress.

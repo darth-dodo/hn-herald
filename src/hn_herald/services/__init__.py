@@ -8,6 +8,7 @@ from hn_herald.services.hn_client import (
 )
 from hn_herald.services.llm import LLMService
 from hn_herald.services.loader import ArticleLoader
+from hn_herald.services.scoring import ScoringService
 
 __all__ = [
     "ArticleLoader",
@@ -16,4 +17,5 @@ __all__ = [
     "HNClientError",
     "HNTimeoutError",
     "LLMService",
+    "ScoringService",
 ]
