@@ -30,7 +30,7 @@ A 12-factor application using FastAPI, HTMX, and LangGraph for AI-powered Hacker
 ```mermaid
 graph TB
     subgraph Browser["CLIENT (Browser)"]
-        LS[localStorage<br/>profile]
+        LocalS[localStorage<br/>profile]
         HTMX[HTMX<br/>partials]
         TW[Tailwind CSS<br/>mobile-first]
     end
@@ -39,26 +39,33 @@ graph TB
         Routes[Routes<br/>Jinja2]
         Templates[Templates<br/>HTMX]
         Tasks[Background Tasks<br/>async]
+        Cache[(SQLite Cache)]
 
         subgraph Pipeline["LANGGRAPH PIPELINE"]
-            Fetch[Fetch HN] --> Extract[Extract Articles]
-            Extract --> Filter[Filter]
-            Filter --> Summarize[Summarize<br/>LLM]
+            Fetch[Fetch HN] --> Extract[Extract Articles<br/>WebBaseLoader]
+            Extract --> Split[Text Splitter]
+            Split --> Filter[Filter]
+            Filter --> Summarize[Summarize<br/>PydanticParser]
             Summarize --> Score[Score]
             Score --> Rank[Rank]
             Rank --> Format[Format]
         end
+
+        Callbacks[Progress<br/>Callbacks] -.-> HTMX
     end
 
     subgraph External["EXTERNAL SERVICES"]
         HN[HN API<br/>Firebase REST]
         Claude[Anthropic API<br/>Claude]
+        LangSmith[LangSmith<br/>Observability]
     end
 
     Browser -->|HTTP/HTMX| FastAPI
     Fetch --> HN
     Summarize --> Claude
+    Summarize -.-> Cache
     Score --> Claude
+    Pipeline -.->|traces| LangSmith
 ```
 
 ### Component Interaction Flow
@@ -150,7 +157,13 @@ hn-herald/
 │       ├── services/
 │       │   ├── __init__.py
 │       │   ├── hn_client.py         # HackerNews API client
-│       │   └── llm.py               # Anthropic Claude wrapper
+│       │   ├── llm.py               # Anthropic Claude wrapper
+│       │   ├── cache.py             # LangChain caching setup
+│       │   └── loader.py            # Document loader + text splitter
+│       │
+│       ├── callbacks/
+│       │   ├── __init__.py
+│       │   └── progress.py          # HTMX progress callbacks
 │       │
 │       └── models/
 │           ├── __init__.py
@@ -188,13 +201,19 @@ hn-herald/
 | HTTP Client  | httpx           | Async HTTP requests  |
 | HTML Parsing | BeautifulSoup4  | Article extraction   |
 
-### AI/ML
+### AI/ML (LangChain Ecosystem)
 
-| Component     | Technology          | Purpose                |
-| ------------- | ------------------- | ---------------------- |
-| Orchestration | LangGraph 0.2+      | Pipeline management    |
-| LLM Interface | LangChain-Anthropic | Claude integration     |
-| Model         | Claude Sonnet 4     | Summarization, scoring |
+| Component       | Technology                | Purpose                          |
+| --------------- | ------------------------- | -------------------------------- |
+| Orchestration   | LangGraph 0.2+            | Pipeline management              |
+| LLM Interface   | LangChain-Anthropic       | Claude integration               |
+| Model           | Claude Sonnet 4           | Summarization, scoring           |
+| Observability   | LangSmith                 | Tracing, debugging, monitoring   |
+| Caching         | LangChain Cache           | Response caching for performance |
+| Output Parsing  | PydanticOutputParser      | Structured JSON from LLM         |
+| Callbacks       | LangChain Callbacks       | Progress streaming to frontend   |
+| Document Loading| WebBaseLoader             | Article content extraction       |
+| Text Processing | RecursiveCharacterSplitter| Smart chunking for long articles |
 
 ### Frontend
 
@@ -479,6 +498,237 @@ graph LR
 | score         | filtered_articles | scored_articles               | Yes   | No           |
 | rank          | scored_articles   | ranked_articles               | No    | No           |
 | format        | ranked_articles   | digest                        | No    | No           |
+
+---
+
+## LangChain Ecosystem Integration
+
+### LangSmith (Observability)
+
+Tracing and monitoring for LLM operations.
+
+```python
+import os
+from langsmith import Client
+
+# Enable tracing
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_PROJECT"] = "hn-herald"
+
+# Access traces programmatically
+client = Client()
+```
+
+**Benefits**:
+- Trace all LLM calls with latency, tokens, costs
+- Debug failed requests with full context
+- Replay traces for testing
+- Monitor production performance
+
+### Caching
+
+Reduce API costs and latency with intelligent caching.
+
+```python
+from langchain.cache import SQLiteCache, InMemoryCache
+from langchain.globals import set_llm_cache
+
+# In-memory for development (fast, session-scoped)
+set_llm_cache(InMemoryCache())
+
+# SQLite for production (persistent across restarts)
+set_llm_cache(SQLiteCache(database_path=".cache/llm_cache.db"))
+```
+
+**Cache Strategy**:
+- Cache summaries by article URL hash
+- Cache relevance scores by (article_hash, profile_hash)
+- TTL: 24 hours for summaries, 1 hour for scores
+
+### Output Parsers
+
+Structured, validated output from LLM responses.
+
+```python
+from langchain.output_parsers import PydanticOutputParser
+from pydantic import BaseModel, Field
+
+class ArticleSummary(BaseModel):
+    summary: str = Field(description="2-3 sentence summary")
+    key_points: list[str] = Field(description="3 key takeaways")
+    tech_tags: list[str] = Field(description="Relevant technology tags")
+
+parser = PydanticOutputParser(pydantic_object=ArticleSummary)
+
+prompt = f"""Summarize this article.
+{parser.get_format_instructions()}
+
+Article: {{content}}"""
+```
+
+**Benefits**:
+- Type-safe LLM outputs
+- Automatic validation
+- Clear error messages on parse failures
+- Consistent JSON structure
+
+### Callbacks (Progress Streaming)
+
+Real-time progress updates to HTMX frontend.
+
+```python
+from langchain.callbacks.base import BaseCallbackHandler
+from typing import Any
+
+class HTMXProgressCallback(BaseCallbackHandler):
+    def __init__(self, send_event):
+        self.send_event = send_event
+
+    def on_llm_start(self, serialized: dict, prompts: list, **kwargs):
+        self.send_event("llm_start", {"status": "Summarizing..."})
+
+    def on_llm_end(self, response, **kwargs):
+        self.send_event("llm_end", {"status": "Complete"})
+
+    def on_chain_start(self, serialized: dict, inputs: dict, **kwargs):
+        chain_name = serialized.get("name", "Processing")
+        self.send_event("chain_start", {"step": chain_name})
+```
+
+**Integration with SSE**:
+```python
+from fastapi import Response
+from sse_starlette.sse import EventSourceResponse
+
+@app.post("/generate")
+async def generate_digest(profile: UserProfile):
+    async def event_generator():
+        callback = HTMXProgressCallback(lambda t, d: yield {"event": t, "data": d})
+        result = await graph.ainvoke({"profile": profile}, config={"callbacks": [callback]})
+        yield {"event": "complete", "data": result}
+
+    return EventSourceResponse(event_generator())
+```
+
+### Document Loaders
+
+Intelligent article content extraction.
+
+```python
+from langchain_community.document_loaders import WebBaseLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+async def extract_article(url: str) -> str:
+    loader = WebBaseLoader(url)
+    docs = loader.load()
+
+    if not docs:
+        return None
+
+    # Smart chunking for long articles
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=8000,
+        chunk_overlap=200,
+        separators=["\n\n", "\n", ". ", " ", ""]
+    )
+
+    chunks = splitter.split_documents(docs)
+    # Return first chunk (main content)
+    return chunks[0].page_content if chunks else None
+```
+
+**Advantages over BeautifulSoup**:
+- Built-in handling for common webpage structures
+- Automatic metadata extraction
+- Consistent output format
+- Better handling of dynamic content
+
+### Text Splitters
+
+Smart chunking preserves context better than simple truncation.
+
+```python
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=8000,           # Max chars per chunk
+    chunk_overlap=200,         # Overlap between chunks
+    length_function=len,
+    separators=[
+        "\n\n",    # Paragraphs first
+        "\n",      # Then lines
+        ". ",      # Then sentences
+        ", ",      # Then clauses
+        " ",       # Then words
+        ""         # Finally characters
+    ]
+)
+
+# For very long articles, summarize first chunk
+chunks = splitter.split_text(article_content)
+main_content = chunks[0]  # Most relevant content
+```
+
+### Integration Architecture
+
+```mermaid
+graph TB
+    subgraph "LangChain Ecosystem"
+        LC[LangChain Core]
+        LG[LangGraph]
+        LA[LangChain-Anthropic]
+        LS[LangSmith]
+
+        subgraph "Components"
+            Cache[SQLite Cache]
+            Parser[Pydantic Parser]
+            Callback[HTMX Callbacks]
+            Loader[WebBaseLoader]
+            Splitter[Text Splitter]
+        end
+    end
+
+    subgraph "Application"
+        API[FastAPI]
+        Graph[Pipeline Graph]
+        LLM[Claude Sonnet]
+    end
+
+    API --> Graph
+    Graph --> LG
+    LG --> LA
+    LA --> LLM
+
+    Graph --> Cache
+    Graph --> Parser
+    Graph --> Callback
+    Graph --> Loader
+    Loader --> Splitter
+
+    LG -.-> LS
+    LA -.-> LS
+
+    style LS fill:#f9f,stroke:#333
+    style Cache fill:#bbf,stroke:#333
+    style Parser fill:#bfb,stroke:#333
+```
+
+### Environment Variables (LangChain)
+
+```bash
+# LangSmith (optional but recommended)
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=ls-...
+LANGCHAIN_PROJECT=hn-herald
+
+# Caching
+LLM_CACHE_TYPE=sqlite           # sqlite|memory|none
+LLM_CACHE_TTL=86400             # 24 hours in seconds
+
+# Document Loading
+LOADER_TIMEOUT=15               # Seconds
+LOADER_MAX_CONTENT=50000        # Max chars before splitting
+```
 
 ---
 
