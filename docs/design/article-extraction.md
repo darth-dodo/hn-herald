@@ -72,29 +72,27 @@ Indicators for paywalled content:
 
 ### Component Diagram
 
-```
-+------------------+     +------------------+     +------------------+
-|                  |     |                  |     |                  |
-|  Story           |---->|  ArticleLoader   |---->|   Article        |
-|  (from MVP-1)    |     |   (async)        |     |   (extracted)    |
-|                  |     |                  |     |                  |
-+------------------+     +------------------+     +------------------+
-                               |
-                               v
-                         +------------------+
-                         |                  |
-                         |  WebBaseLoader   |
-                         |  (LangChain)     |
-                         |                  |
-                         +------------------+
-                               |
-                               v
-                         +------------------+
-                         |                  |
-                         |  Text Splitter   |
-                         |  (LangChain)     |
-                         |                  |
-                         +------------------+
+```mermaid
+flowchart LR
+    subgraph Input
+        Story["Story<br/>(from MVP-1)"]
+    end
+
+    subgraph Processing
+        ArticleLoader["ArticleLoader<br/>(async)"]
+        WebBaseLoader["WebBaseLoader<br/>(LangChain)"]
+        TextSplitter["Text Splitter<br/>(LangChain)"]
+    end
+
+    subgraph Output
+        Article["Article<br/>(extracted)"]
+    end
+
+    Story --> ArticleLoader
+    ArticleLoader --> WebBaseLoader
+    WebBaseLoader --> TextSplitter
+    TextSplitter --> Article
+    ArticleLoader --> Article
 ```
 
 ### Components
