@@ -1,0 +1,66 @@
+# Pre-commit hooks configuration
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: "trim trailing whitespace"
+      - id: end-of-file-fixer
+        name: "fix end of files"
+      - id: check-yaml
+        name: "check yaml syntax"
+      - id: check-json
+        name: "check json syntax"
+      - id: check-toml
+        name: "check toml syntax"
+      - id: check-added-large-files
+        name: "check for large files"
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+        name: "check for merge conflicts"
+      - id: detect-private-key
+        name: "detect private keys"
+      - id: check-case-conflict
+        name: "check case conflicts"
+
+  # Ruff - Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.2
+    hooks:
+      - id: ruff
+        name: "ruff lint"
+        args: [--fix]
+      - id: ruff-format
+        name: "ruff format"
+
+  # Type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        name: "mypy typecheck"
+        additional_dependencies:
+          - pydantic>=2.0.0
+          - pydantic-settings>=2.0.0
+          - fastapi>=0.110.0
+          - types-requests
+        args: [--config-file=pyproject.toml]
+        pass_filenames: false
+        entry: mypy src/
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    style: auto-fix from pre-commit hooks
+
+    Applied automatic fixes from pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: 'chore: update pre-commit hook versions'
+  autoupdate_schedule: weekly
+  skip: [mypy]  # Skip mypy in CI as it requires full environment
+  submodules: false

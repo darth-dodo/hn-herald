@@ -1,0 +1,280 @@
+# Agentic Framework - HN Herald Project Configuration
+# Privacy-first HackerNews digest with LangGraph ecosystem
+
+# ============================================================================
+# Project Information
+# ============================================================================
+project:
+  name: 'HN Herald'
+  description: 'Privacy-first, personalized HackerNews digest with AI summarization'
+  type: 'web-app'
+
+# ============================================================================
+# Technology Stack
+# ============================================================================
+stack:
+  languages:
+    primary: 'python'
+    secondary: []
+
+  frameworks:
+    frontend: 'htmx'
+    backend: 'fastapi'
+    testing: 'pytest'
+    ai: 'langgraph'
+
+  build_tools:
+    package_manager: 'uv'
+    bundler: 'none'
+    task_runner: 'make'
+
+# ============================================================================
+# Quality Gate Thresholds
+# ============================================================================
+quality_gates:
+  # Gate 1-3: Code Quality
+  syntax:
+    enabled: true
+    commands:
+      - 'uv run python -m py_compile src/hn_herald/**/*.py'
+
+  types:
+    enabled: true
+    strict_mode: true
+    commands:
+      - 'uv run mypy src/'
+
+  lint:
+    enabled: true
+    zero_warnings: true
+    commands:
+      - 'uv run ruff check src/ tests/'
+      - 'uv run ruff format --check src/ tests/'
+
+  # Gate 4: Security
+  security:
+    enabled: true
+    audit_level: 'moderate'
+    commands:
+      - 'uv pip audit'
+
+  # Gate 5: Tests
+  tests:
+    enabled: true
+    coverage_threshold: 70
+    commands:
+      - 'uv run pytest --cov=src/hn_herald --cov-report=term-missing'
+
+  # Gate 6: Performance
+  performance:
+    enabled: true
+    lighthouse_score: 90
+    load_time_3g: '3s'
+    bundle_size: 'N/A'  # Backend app
+
+  # Gate 7: Accessibility
+  accessibility:
+    enabled: true
+    wcag_level: 'AA'
+    lighthouse_score: 95
+
+  # Gate 8: Integration
+  integration:
+    enabled: true
+    commands:
+      - 'uv run uvicorn hn_herald.main:app --host 0.0.0.0 --port 8000 &'
+      - 'sleep 3 && curl -f http://localhost:8000/api/health'
+
+# ============================================================================
+# Persona Configuration
+# ============================================================================
+personas:
+  architect:
+    enabled: true
+    mcp_primary: 'sequential'
+    mcp_secondary: 'context7'
+    focus: ['architecture', 'langgraph-pipelines', 'api-design', 'data-models']
+
+  developer:
+    enabled: true
+    mcp_primary: 'context7'
+    mcp_secondary: 'sequential'
+    focus: ['fastapi', 'langgraph', 'pydantic', 'async-python', 'htmx']
+
+  writer:
+    enabled: true
+    mcp_primary: 'context7'
+    mcp_secondary: 'sequential'
+    focus: ['documentation', 'README', 'api-docs', 'user-guides']
+
+  qa:
+    enabled: true
+    mcp_primary: 'playwright'
+    mcp_secondary: 'sequential'
+    focus: ['testing', 'e2e', 'mobile-testing', 'accessibility']
+
+# ============================================================================
+# Workflow Configuration
+# ============================================================================
+workflows:
+  feature_development:
+    phases:
+      - name: 'Design'
+        persona: 'architect'
+        duration: '30-60min'
+        outputs: ['docs/design/*.md']
+      - name: 'Implementation'
+        persona: 'developer'
+        duration: '1-3hr'
+        outputs: ['src/**/*.py', 'tests/**/*.py']
+      - name: 'Validation'
+        persona: 'qa'
+        duration: '30-60min'
+        outputs: ['test-results', 'quality-report']
+
+  mvp_session:
+    phases:
+      - name: 'Foundation'
+        persona: 'developer'
+        duration: '1-2hr'
+        outputs: ['core-module']
+      - name: 'Tests'
+        persona: 'qa'
+        duration: '30min'
+        outputs: ['unit-tests', 'integration-tests']
+
+  content_creation:
+    phases:
+      - name: 'Outline'
+        persona: 'writer'
+        duration: '15-30min'
+      - name: 'Write'
+        persona: 'writer'
+        duration: '1-2hr'
+      - name: 'Review'
+        persona: 'qa'
+        duration: '15-30min'
+
+# ============================================================================
+# Multi-Agent Configuration
+# ============================================================================
+multi_agent:
+  enabled: true
+  max_parallel_agents: 5
+
+  patterns:
+    parallel:
+      description: 'Independent MVP components'
+      use_when: 'Building independent services (hn_client, llm, loader)'
+      example: '3 Developer agents: HN API, Article Extractor, LLM Service'
+
+    sequential:
+      description: 'Pipeline stages with dependencies'
+      use_when: 'Building the LangGraph pipeline nodes'
+      example: 'Architect → Developer → QA for each pipeline stage'
+
+    hierarchical:
+      description: 'Lead + worker agents'
+      use_when: 'Full MVP sessions with multiple components'
+      example: 'Architect leads 2 Developers + QA'
+
+# ============================================================================
+# Session Management
+# ============================================================================
+session:
+  checkpoint_interval: '30min'
+  auto_save: true
+
+  context_retention:
+    target: 90
+    compress_at: 75
+
+  handoff:
+    required_fields:
+      - 'current_task'
+      - 'next_action'
+      - 'blockers'
+      - 'quality_status'
+      - 'test_coverage'
+
+# ============================================================================
+# MCP Server Preferences (HN Herald Specific)
+# ============================================================================
+mcp_servers:
+  context7:
+    description: 'LangChain/LangGraph documentation and patterns'
+    use_for:
+      - 'LangGraph pipeline patterns'
+      - 'FastAPI patterns'
+      - 'Pydantic validation'
+      - 'HTMX integration'
+    auto_activate:
+      - 'langgraph import'
+      - 'fastapi import'
+      - 'pydantic import'
+
+  sequential:
+    description: 'Multi-step reasoning and analysis'
+    use_for:
+      - 'Pipeline design'
+      - 'State machine logic'
+      - 'Complex debugging'
+      - 'Architecture decisions'
+    auto_activate:
+      - '--think flags'
+      - 'langgraph state design'
+
+  playwright:
+    description: 'Browser automation and E2E testing'
+    use_for:
+      - 'HTMX interaction testing'
+      - 'Mobile viewport testing'
+      - 'Accessibility validation'
+    auto_activate:
+      - 'e2e test scenarios'
+      - 'mobile testing'
+
+  serena:
+    description: 'Project memory and symbol operations'
+    use_for:
+      - 'Task tracking persistence'
+      - 'Session context'
+      - 'Large refactoring'
+    auto_activate:
+      - 'session save/load'
+      - 'project memory'
+
+# ============================================================================
+# Project-Specific Extensions
+# ============================================================================
+extensions:
+  # HN Herald specific configuration
+  hn_herald:
+    privacy_first: true
+    no_user_accounts: true
+    local_storage_only: true
+
+  # LangGraph pipeline stages
+  pipeline_stages:
+    - 'fetch_hn'
+    - 'fetch_article'
+    - 'filter'
+    - 'summarize'
+    - 'score'
+    - 'rank'
+    - 'format'
+
+  # Deployment
+  deployment:
+    platform: 'docker'
+    server: 'uvicorn'
+    port: 8000
+
+  # External APIs
+  external_apis:
+    - name: 'HackerNews'
+      url: 'https://hacker-news.firebaseio.com/v0'
+      rate_limit: null
+    - name: 'Anthropic'
+      model: 'claude-sonnet-4-20250514'
+      env_var: 'ANTHROPIC_API_KEY'
