@@ -123,12 +123,12 @@ def create_summarized_article(
         summary_data = create_summary(tech_tags=tech_tags or [])
         return SummarizedArticle(
             article=article,
-            summary_data=summary_data,
+            summary=summary_data,
             summarization_status=SummarizationStatus.SUCCESS,
         )
     return SummarizedArticle(
         article=article,
-        summary_data=None,
+        summary=None,
         summarization_status=SummarizationStatus.NO_CONTENT,
     )
 

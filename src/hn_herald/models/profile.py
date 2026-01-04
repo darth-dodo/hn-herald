@@ -6,23 +6,31 @@ interest and disinterest tags used in article relevance scoring.
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from hn_herald.models.story import StoryType
+
 
 class UserProfile(BaseModel):
-    """User preferences for article relevance scoring.
+    """User preferences for article relevance scoring and digest generation.
 
     Stores interest and disinterest tags used to calculate
-    personalized relevance scores for articles.
+    personalized relevance scores, along with fetch preferences.
 
     Attributes:
         interest_tags: Tags for topics user wants to see more of.
         disinterest_tags: Tags for topics user wants to filter out.
         min_score: Minimum final score threshold (0-1).
+        max_articles: Maximum number of articles in digest.
+        fetch_type: Type of stories to fetch (TOP, NEW, BEST, etc.).
+        fetch_count: Number of stories to fetch from HN API.
 
     Example:
         >>> profile = UserProfile(
         ...     interest_tags=["python", "ai", "rust"],
         ...     disinterest_tags=["crypto", "blockchain"],
         ...     min_score=0.3,
+        ...     max_articles=10,
+        ...     fetch_type=StoryType.TOP,
+        ...     fetch_count=30,
         ... )
         >>> "python" in profile.interest_tags
         True
@@ -34,6 +42,7 @@ class UserProfile(BaseModel):
         "str_strip_whitespace": True,
     }
 
+    # Relevance scoring preferences
     interest_tags: list[str] = Field(
         default_factory=list,
         description="Tags for topics to see more of",
@@ -49,6 +58,24 @@ class UserProfile(BaseModel):
         ge=0.0,
         le=1.0,
         description="Minimum final score threshold (0-1)",
+    )
+
+    # Digest generation preferences
+    max_articles: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum number of articles in digest",
+    )
+    fetch_type: StoryType = Field(
+        default=StoryType.TOP,
+        description="Type of HN stories to fetch",
+    )
+    fetch_count: int = Field(
+        default=30,
+        ge=1,
+        le=100,
+        description="Number of stories to fetch from HN API",
     )
 
     @field_validator("interest_tags", "disinterest_tags", mode="before")
