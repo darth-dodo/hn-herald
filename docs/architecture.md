@@ -159,6 +159,7 @@ hn-herald/
 │       │   ├── hn_client.py         # HackerNews API client ✅
 │       │   ├── loader.py            # ArticleLoader service ✅
 │       │   ├── llm.py               # LLM summarization service ✅
+│       │   ├── scoring.py           # Relevance scoring service ✅
 │       │   └── cache.py             # LangChain caching setup
 │       │
 │       ├── callbacks/
@@ -167,10 +168,11 @@ hn-herald/
 │       │
 │       └── models/
 │           ├── __init__.py
-│           ├── profile.py   # UserProfile Pydantic model
+│           ├── profile.py   # UserProfile Pydantic model ✅
 │           ├── story.py     # Story model ✅
 │           ├── article.py   # Article model ✅
-│           └── summary.py   # LLM summarization models ✅
+│           ├── summary.py   # LLM summarization models ✅
+│           └── scoring.py   # RelevanceScore, ScoredArticle ✅
 │
 ├── tests/
 │   ├── __init__.py
@@ -214,6 +216,7 @@ hn-herald/
 | Document Loading| WebBaseLoader             | Article content extraction       |
 | Text Processing | RecursiveCharacterSplitter| Smart chunking for long articles |
 | Summarization   | LLMService (MVP-3)        | Batch article summarization ✅   |
+| Scoring         | ScoringService (MVP-4)    | Tag-based relevance scoring ✅   |
 
 ### Frontend
 
@@ -568,6 +571,53 @@ class LLMService:
 - Called by `summarizer.py` node in LangGraph pipeline
 - Uses `ArticleSummary` for individual summaries
 - Returns `BatchArticleSummary` with processing statistics
+
+### Relevance Scoring Service (MVP-4 Complete)
+
+The scoring service provides personalized article ranking based on user interest tags.
+
+```python
+from hn_herald.models.profile import UserProfile
+from hn_herald.models.scoring import RelevanceScore, ScoredArticle
+from hn_herald.services.scoring import ScoringService
+
+class ScoringService:
+    """Service for calculating article relevance and ranking."""
+
+    RELEVANCE_WEIGHT: float = 0.7
+    POPULARITY_WEIGHT: float = 0.3
+
+    def __init__(self, profile: UserProfile):
+        self.profile = profile
+
+    def score_article(
+        self, article: SummarizedArticle, all_hn_scores: list[int] | None = None
+    ) -> ScoredArticle:
+        """Score a single article based on tag matching and HN popularity."""
+
+    def score_articles(
+        self, articles: list[SummarizedArticle], *, filter_below_min: bool = True
+    ) -> list[ScoredArticle]:
+        """Score, filter, and rank multiple articles."""
+```
+
+**Scoring Algorithm**:
+- **Tag Matching**: Matches article `tech_tags` against user `interest_tags` and `disinterest_tags`
+- **Relevance Score**: 0.1 (disinterest match) → 0.5 (neutral) → 1.0 (all interests match)
+- **Popularity Score**: HN score normalized to 0-1 range (relative within batch or capped at 500)
+- **Final Score**: 70% relevance + 30% popularity (configurable weights)
+
+**Key Features**:
+- **Case-Insensitive Matching**: Tags normalized to lowercase
+- **Disinterest Penalty**: Articles matching disinterest tags scored at 0.1
+- **Batch Processing**: Efficient scoring of multiple articles with relative popularity normalization
+- **Filtering**: Optional filtering by minimum score threshold
+- **Sorting**: Results sorted by final_score descending
+
+**Integration Points**:
+- Called by `scorer.py` node in LangGraph pipeline
+- Uses `UserProfile` for interest/disinterest tags
+- Returns `ScoredArticle` with relevance breakdown and final score
 
 ### Caching
 
@@ -1058,6 +1108,7 @@ make dev
 6. `src/hn_herald/models/*.py` - Pydantic models ✅
 7. `src/hn_herald/services/hn_client.py` - HN API client ✅
 8. `src/hn_herald/services/llm.py` - LLM summarization service ✅
+9. `src/hn_herald/services/scoring.py` - Relevance scoring service ✅
 
 ### Phase 3: LangGraph Pipeline
 

@@ -4,11 +4,11 @@
 
 | Field | Value |
 |-------|-------|
-| current_task | MVP-4: Relevance Scoring |
-| next_action | Create design document `docs/design/04-relevance-scoring.md` |
+| current_task | MVP-5: FastAPI Endpoints |
+| next_action | Create design document `docs/design/05-fastapi-endpoints.md` |
 | blockers | None |
 | quality_status | ✅ 8/8 gates passing |
-| test_coverage | 76+ tests, ≥70% coverage |
+| test_coverage | 346 tests, ≥70% coverage |
 
 ---
 
@@ -64,30 +64,45 @@ We follow **Extreme Programming (XP)** principles:
 | MVP-1 | HN API client | Can fetch stories | ✅ 68 unit tests | DONE |
 | MVP-2 | Article extraction | Can read content | ✅ Loader tests | DONE |
 | MVP-3 | LLM summarization | Get AI summaries | ✅ 11 integration tests | DONE |
-| MVP-4 | Relevance scoring | Personalized ranking | ⏳ Scoring accuracy | TODO |
+| MVP-4 | Relevance scoring | Personalized ranking | ✅ 186 scoring tests | DONE |
 | MVP-5 | FastAPI endpoints | API is callable | ⏳ API contract tests | TODO |
 | MVP-6 | HTMX templates | Usable web UI | ⏳ E2E smoke tests | TODO |
 | MVP-7 | Tag system UI | Can select interests | ⏳ Component tests | TODO |
 | MVP-8 | Mobile polish | Works on phones | ⏳ Lighthouse >90 | TODO |
 
-**Overall**: 25/29+ tasks | 76+ tests passing | 8/8 gates green
+**Overall**: 29/33+ tasks | 346 tests passing | 8/8 gates green
 
 ---
 
 ## Current Focus
 
-### MVP-4: Relevance Scoring [TODO]
+### MVP-5: FastAPI Endpoints [TODO]
 
 | # | Task | Status | Quality Gate | Artifact |
 |---|------|--------|--------------|----------|
-| 1 | Create design document | TODO | Reviewed | `docs/design/04-relevance-scoring.md` |
-| 2 | Create scoring models | TODO | Types pass | `models/relevance.py` |
-| 3 | Implement preference matching | TODO | Unit tests | Tag-based personalization |
-| 4 | Write scoring tests | TODO | Coverage ≥70% | Integration tests |
+| 1 | Create design document | TODO | Reviewed | `docs/design/05-fastapi-endpoints.md` |
+| 2 | Create API routes | TODO | Types pass | `api/routes.py` |
+| 3 | Implement digest generation endpoint | TODO | Unit tests | POST /api/generate |
+| 4 | Write API tests | TODO | Coverage ≥70% | Contract tests |
 
 ---
 
 ## Completed Milestones
+
+<details>
+<summary><strong>MVP-4: Relevance Scoring [DONE]</strong></summary>
+
+| # | Task | Quality Gate | Artifact |
+|---|------|--------------|----------|
+| 1 | Create design document | Reviewed | `docs/design/04-relevance-scoring.md` |
+| 2 | Create UserProfile model | Types pass | `models/profile.py` |
+| 3 | Create RelevanceScore and ScoredArticle models | Types pass | `models/scoring.py` |
+| 4 | Implement ScoringService | Lint pass | `services/scoring.py` |
+| 5 | Write UserProfile tests | 41 tests | Tag normalization, validation |
+| 6 | Write RelevanceScore/ScoredArticle tests | 80 tests | Bounds, properties, filtering |
+| 7 | Write ScoringService tests | 65 tests | Tag matching, batch scoring |
+
+</details>
 
 <details>
 <summary><strong>MVP-3: LLM Summarization [DONE]</strong></summary>
