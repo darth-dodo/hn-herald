@@ -6,8 +6,10 @@ from hn_herald.services.hn_client import (
     HNClientError,
     HNTimeoutError,
 )
+from hn_herald.services.loader import ArticleLoader
 
 __all__ = [
+    "ArticleLoader",
     "HNAPIError",
     "HNClient",
     "HNClientError",
