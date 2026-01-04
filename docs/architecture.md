@@ -223,13 +223,24 @@ hn-herald/
 ```mermaid
 erDiagram
     UserProfile ||--o{ Digest : generates
+    UserProfile ||--|{ Tag : "has interest"
+    UserProfile ||--|{ Tag : "has disinterest"
     Digest ||--|{ Article : contains
     Digest ||--|| DigestStats : has
     Story ||--|| Article : "transforms to"
+    Article ||--|{ Tag : "matched by"
+
+    Tag {
+        string id PK
+        string name
+        string category
+        bool is_predefined
+    }
 
     UserProfile {
-        list interests
-        list disinterests
+        list interest_tags
+        list disinterest_tags
+        list custom_tags
         int min_score
         int max_articles
         string fetch_type
@@ -277,16 +288,27 @@ erDiagram
     }
 ```
 
+### Tag
+
+```python
+class Tag(BaseModel):
+    id: str                        # Slugified tag name
+    name: str                      # Display name
+    category: str                  # Category (Languages, AI/ML, etc.)
+    is_predefined: bool = True     # False for custom tags
+```
+
 ### UserProfile
 
 ```python
 class UserProfile(BaseModel):
-    interests: list[str]           # ["AI", "Python", "startups"]
-    disinterests: list[str] = []   # ["crypto", "blockchain"]
-    min_score: int = 20            # Minimum HN points
-    max_articles: int = 10         # Digest size
+    interest_tags: list[str] = []      # Tag IDs for interests
+    disinterest_tags: list[str] = []   # Tag IDs for disinterests
+    custom_tags: list[Tag] = []        # User-created tags
+    min_score: int = 20                # Minimum HN points
+    max_articles: int = 10             # Digest size
     fetch_type: Literal["top", "new", "best", "ask", "show", "job"] = "top"
-    fetch_count: int = 30          # Stories to fetch
+    fetch_count: int = 30              # Stories to fetch
 ```
 
 ### Story (from HN API)

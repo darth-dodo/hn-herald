@@ -2,7 +2,17 @@
 
 ## Vision
 
-A personalized HackerNews digest that fetches top stories, summarizes articles using AI, scores relevance to your interests, and delivers a curated reading experience—all through a fast, mobile-first web interface.
+A **privacy-first**, personalized HackerNews digest that fetches top stories, summarizes articles using AI, scores relevance to your interests, and delivers a curated reading experience—all through a fast, mobile-first web interface.
+
+### Privacy-First Principles
+
+- **No Account Required**: Use immediately without signup or login
+- **Local-First Storage**: All preferences stored in browser (localStorage)
+- **No Tracking**: No analytics, no cookies for tracking, no user behavior logging
+- **No Server-Side Storage**: User profiles never leave the browser
+- **Ephemeral Processing**: Article content processed in real-time, never stored
+- **Transparent Data Flow**: User can see exactly what data is sent to AI
+- **Export/Delete**: Users can export or delete their local data anytime
 
 ## Problem Statement
 
@@ -21,13 +31,35 @@ A personalized HackerNews digest that fetches top stories, summarizes articles u
 
 ## MVP Features (Phase 1)
 
-### F1: Interest Profile
+### F1: Tag-Based Interest Profile
 
-- Set interests via simple text input (e.g., "AI, Python, startups")
-- Set disinterests to filter out (e.g., "crypto, blockchain")
+- **Predefined Tags**: Curated list of common tech topics for quick selection
+- **Custom Tags**: Users can create new tags beyond predefined options
+- **Interest Tags**: Select tags for topics you want to see (e.g., `AI`, `Python`, `Startups`)
+- **Disinterest Tags**: Select tags for topics to filter out (e.g., `Crypto`, `Blockchain`)
 - Configure minimum HN score threshold
 - Configure max articles in digest
 - **Storage**: Browser localStorage + cookie
+
+#### Predefined Tag Categories
+
+| Category | Tags |
+|----------|------|
+| Languages | `Python`, `JavaScript`, `TypeScript`, `Rust`, `Go`, `Java`, `C++`, `Ruby`, `Elixir`, `Zig` |
+| AI/ML | `AI`, `Machine Learning`, `LLM`, `GPT`, `Deep Learning`, `Computer Vision`, `NLP` |
+| Web | `Frontend`, `Backend`, `React`, `Vue`, `HTMX`, `Node.js`, `Django`, `FastAPI`, `Rails` |
+| Infrastructure | `DevOps`, `Kubernetes`, `Docker`, `AWS`, `Cloud`, `Linux`, `Networking`, `Security` |
+| Data | `Databases`, `PostgreSQL`, `Redis`, `Data Engineering`, `Analytics`, `SQL` |
+| Business | `Startups`, `Fundraising`, `YC`, `Entrepreneurship`, `Product`, `Growth` |
+| Culture | `Remote Work`, `Career`, `Hiring`, `Open Source`, `Side Projects`, `Indie Hacker` |
+| Avoid | `Crypto`, `Blockchain`, `NFT`, `Web3`, `Politics`, `Drama` |
+
+#### Custom Tag Creation
+
+- Users can type new tags not in predefined list
+- Custom tags are validated (alphanumeric, 2-30 chars)
+- Custom tags persist in user profile
+- Popular custom tags may be promoted to predefined list (future)
 
 ### F2: Story Fetching
 
@@ -79,11 +111,11 @@ A personalized HackerNews digest that fetches top stories, summarizes articles u
 ```mermaid
 gantt
     title HN Herald Development Roadmap
-    dateFormat YYYY-MM
+    dateFormat YYYY-MM-DD
     axisFormat %b
 
     section MVP
-    Core Pipeline           :done, mvp1, 2025-01, 2w
+    Core Pipeline           :done, mvp1, 2025-01-04, 2w
     FastAPI + HTMX UI       :done, mvp2, after mvp1, 1w
     Mobile-First Design     :done, mvp3, after mvp2, 1w
 
@@ -156,8 +188,10 @@ journey
     title HN Herald User Journey
     section First Visit
       Land on homepage: 5: User
-      See default settings: 4: User
-      Enter interests: 5: User
+      Browse predefined tags: 5: User
+      Select interest tags: 5: User
+      Mark disinterest tags: 4: User
+      Create custom tag: 4: User
       Click Generate: 5: User
     section Digest Generation
       See loading state: 3: User
@@ -165,32 +199,36 @@ journey
       View personalized digest: 5: User
     section Reading
       Scan article summaries: 5: User
+      See matching tags highlighted: 5: User
       Read key points: 5: User
       Click to full article: 4: User
       Return for more: 5: User
     section Return Visit
-      Settings remembered: 5: User
+      Tags remembered: 5: User
       Quick regenerate: 5: User
-      Try different filters: 4: User
+      Adjust tags as needed: 4: User
 ```
 
 ---
 
 ## User Stories (MVP)
 
-### US1: Configure Interests
+### US1: Configure Interests with Tags
 
 **As a** tech professional
-**I want to** set my interests and disinterests
+**I want to** select interest and disinterest tags
 **So that** I get personalized article recommendations
 
 **Acceptance Criteria:**
 
-- Can enter comma-separated interests
-- Can enter comma-separated disinterests
+- Can select from predefined tag categories
+- Can create custom tags beyond predefined list
+- Tags are displayed as clickable chips/pills
+- Can toggle tags between interest/disinterest/neutral
 - Can set minimum HN score (default: 20)
 - Can set max articles (default: 10)
 - Settings persist across sessions
+- Mobile-friendly tag selection (touch targets ≥48px)
 
 ### US2: Generate Digest
 
@@ -282,11 +320,14 @@ journey
 - Retry logic with exponential backoff
 - Clear error messages
 
-### Security
+### Security & Privacy
 
-- No sensitive data stored
+- No user accounts or authentication
+- No server-side user data storage
 - API keys server-side only
 - Input sanitization
+- No third-party analytics or tracking
+- All processing ephemeral (stateless)
 
 ### Accessibility
 
