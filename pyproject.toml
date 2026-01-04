@@ -297,6 +297,7 @@ module = [
     "langchain.*",
     "langchain_anthropic.*",
     "langchain_community.*",
+    "langchain_core.*",
     "langgraph.*",
     "bs4.*",
     "lxml.*",

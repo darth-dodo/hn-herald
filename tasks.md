@@ -1,412 +1,209 @@
 # HN Herald - Task Tracking
 
-> **Source of Truth**: This file is the single source of truth for project state.
+## Session Handoff
 
-## Table of Contents
-
-- [How to Use This File](#how-to-use-this-file)
-- [XP Programming Flow](#xp-programming-flow)
-- [Project Timeline](#project-timeline)
-- [Current Work](#current-work)
-- [Completed Phases](#completed-phases)
-- [Task History Archive](#task-history-archive)
-- [Notes for Future Agents](#notes-for-future-agents)
+| Field | Value |
+|-------|-------|
+| current_task | MVP-4: Relevance Scoring |
+| next_action | Create design document `docs/design/04-relevance-scoring.md` |
+| blockers | None |
+| quality_status | ✅ 8/8 gates passing |
+| test_coverage | 76+ tests, ≥70% coverage |
 
 ---
 
-## How to Use This File
+## XP Development Approach
 
-### Session Start
+We follow **Extreme Programming (XP)** principles:
 
-```bash
-# 1. Check current state
-cat tasks.md
-git status && git branch
-
-# 2. Verify environment
-make test  # or uv run pytest
-
-# 3. Create/checkout feature branch
-git checkout -b feature/descriptive-name
-```
-
-### During Work
-
-- Update task status to 🔄 when starting
-- Commit every 15-30 minutes
-- Update tasks.md every 30 minutes
-- Run quality gates before each commit
-
-### Session End
-
-```bash
-# 1. Full validation
-make test && make lint
-
-# 2. Update tasks.md with session log
-
-# 3. Final commit
-git add . && git commit -m "feat: complete feature X"
-
-# 4. Push
-git push origin feature/name
-```
+| Principle | Practice |
+|-----------|----------|
+| Small Releases | Each MVP delivers shippable increment |
+| TDD Cycle | Red → Green → Refactor |
+| Small Commits | Every 15-30 minutes |
+| CI/CD | Pre-commit hooks → Tests → Build → Deploy |
+| Simple Design | Build only what's needed now |
+| Collective Ownership | Any agent can modify any code |
 
 ---
 
-## XP Programming Flow
+## 8-Step Quality Gates
 
-| XP Practice              | Task Integration                              |
-| ------------------------ | --------------------------------------------- |
-| **TDD**                  | Tasks specify test requirements before impl   |
-| **Small Steps**          | Tasks decomposed into commit-sized units      |
-| **Continuous Integration** | Tasks include quality gate verification     |
-| **Collective Ownership** | Tasks assigned to phases, not individuals     |
+| Gate | Check | Tool | Threshold |
+|------|-------|------|-----------|
+| 1. Syntax | Code parses | `uv run python -m py_compile` | Zero errors |
+| 2. Types | Type safety | `uv run mypy src/` | Strict mode |
+| 3. Lint | Code style | `uv run ruff check src/` | Zero warnings |
+| 4. Security | Vulnerabilities | `uv pip audit` | No high/critical |
+| 5. Tests | Coverage | `uv run pytest --cov` | ≥70% |
+| 6. Performance | Load time | Lighthouse | ≥90 score |
+| 7. Accessibility | WCAG | Playwright a11y | AA compliance |
+| 8. Integration | Smoke tests | E2E suite | All pass |
 
-### Agentic Workflow Phases
-
-1. **Design (Architect)**: Create `docs/design/*.md`
-2. **Implementation (Developer)**: TDD with quality gates
-3. **Validation (QA)**: Full test suite + coverage check
-
----
-
-## Project Timeline
-
-| Session   | Deliverable                    | User Value                 | CI/CD Gate            |
-| --------- | ------------------------------ | -------------------------- | --------------------- |
-| **Setup** | Project scaffolding            | Development ready          | ✅ Complete           |
-| **MVP-1** | HN API client + basic fetch    | Can fetch stories          | ✅ Complete           |
-| **MVP-2** | Article extraction             | Can read article content   | ⏳ Integration tests  |
-| **MVP-3** | LLM summarization              | Get AI summaries           | ⏳ Mock LLM tests     |
-| **MVP-4** | Relevance scoring              | Personalized ranking       | ⏳ Scoring accuracy   |
-| **MVP-5** | FastAPI endpoints              | API is callable            | ⏳ API contract tests |
-| **MVP-6** | HTMX templates                 | Usable web UI              | ⏳ E2E smoke tests    |
-| **MVP-7** | Tag system UI                  | Can select interests       | ⏳ Component tests    |
-| **MVP-8** | Mobile polish                  | Works on phones            | ⏳ Lighthouse >90     |
+**Pre-commit**: Gates 1-4 | **CI**: Gates 5-8
 
 ---
 
-## Current Work
+## Agentic Workflow Phases
 
-### Active Tasks
+| Phase | Persona | Duration | Output |
+|-------|---------|----------|--------|
+| Design | Architect | 30-60min | `docs/design/*.md` |
+| Implementation | Developer | 1-3hr | `src/**/*.py`, `tests/**/*.py` |
+| Validation | QA | 30-60min | Test results, quality report |
 
-| Task                              | Status | Notes                          |
-| --------------------------------- | ------ | ------------------------------ |
-| MVP-1 HN API Client               | ✅     | Complete - branch ready for PR |
-
-### Up Next - Priority Tasks
-
-#### 🟠 High Priority (MVP-1: HN API Client) ✅ COMPLETE
-
-| Task                              | Status | Priority | Notes                          |
-| --------------------------------- | ------ | -------- | ------------------------------ |
-| Create design document            | ✅     | 🟠       | `docs/design/hn-api-client.md` |
-| Create models/story.py            | ✅     | 🟠       | Story Pydantic model + StoryType enum |
-| Create services/hn_client.py      | ✅     | 🟠       | HN API async client with httpx |
-| Create tests for HN client        | ✅     | 🟠       | 68 unit tests with mocked responses |
-| Verify HN API fetching works      | ✅     | 🟠       | Integration test (marked slow) |
-
-#### 🟡 Medium Priority (MVP-2: Article Extraction)
-
-| Task                              | Status | Priority | Notes                          |
-| --------------------------------- | ------ | -------- | ------------------------------ |
-| Create models/article.py          | ⏳     | 🟡       | Article Pydantic model         |
-| Create services/loader.py         | ⏳     | 🟡       | WebBaseLoader + text splitter  |
-| Handle problematic domains        | ⏳     | 🟡       | Skip Twitter, Reddit, etc.     |
-| Add extraction tests              | ⏳     | 🟡       | Mock external URLs             |
+**MCP Servers**: Context7 (docs) | Sequential (analysis) | Playwright (E2E)
 
 ---
 
-## Completed Phases
+## Progress Summary
 
-### Phase 0: Project Planning ✅
+| MVP | Deliverable | User Value | CI/CD Gate | Status |
+|-----|-------------|------------|------------|--------|
+| Setup | Project scaffolding | Foundation | ✅ All hooks passing | DONE |
+| MVP-1 | HN API client | Can fetch stories | ✅ 68 unit tests | DONE |
+| MVP-2 | Article extraction | Can read content | ✅ Loader tests | DONE |
+| MVP-3 | LLM summarization | Get AI summaries | ✅ 11 integration tests | DONE |
+| MVP-4 | Relevance scoring | Personalized ranking | ⏳ Scoring accuracy | TODO |
+| MVP-5 | FastAPI endpoints | API is callable | ⏳ API contract tests | TODO |
+| MVP-6 | HTMX templates | Usable web UI | ⏳ E2E smoke tests | TODO |
+| MVP-7 | Tag system UI | Can select interests | ⏳ Component tests | TODO |
+| MVP-8 | Mobile polish | Works on phones | ⏳ Lighthouse >90 | TODO |
 
-| Task                              | Status | Notes                          |
-| --------------------------------- | ------ | ------------------------------ |
-| Create product.md                 | ✅     | PRD with features and stories  |
-| Create architecture.md            | ✅     | Technical design with diagrams |
-| Initialize git repository         | ✅     | Main branch created            |
-
-### Phase 0.5: Project Setup ✅
-
-| Task                              | Status | Notes                          |
-| --------------------------------- | ------ | ------------------------------ |
-| Create tasks.md                   | ✅     | Task tracking system           |
-| Create .agentic/config.yml        | ✅     | Agentic framework config       |
-| Create pyproject.toml             | ✅     | Dependencies + ruff/pytest/mypy|
-| Create Makefile                   | ✅     | Dev commands (install/test/lint)|
-| Create .env.example               | ✅     | Environment template           |
-| Create Dockerfile                 | ✅     | Simple production container    |
-| Create src/hn_herald/__init__.py  | ✅     | Package with version           |
-| Create src/hn_herald/config.py    | ✅     | Pydantic Settings class        |
-| Create src/hn_herald/main.py      | ✅     | FastAPI app + /api/health      |
-| Create package structure          | ✅     | api/graph/services/models dirs |
-| Create tests/conftest.py          | ✅     | Pytest fixtures                |
-
-### Phase 1: Testing & CI/CD ✅
-
-| Task                              | Status | Notes                          |
-| --------------------------------- | ------ | ------------------------------ |
-| Write health endpoint tests       | ✅     | 8 tests, 79% coverage          |
-| Setup pre-commit hooks            | ✅     | ruff, mypy, pre-commit-hooks   |
-| Setup GitHub Actions CI/CD        | ✅     | lint, typecheck, test, build   |
-| Update README (product-focused)   | ✅     | Features, quick start, privacy |
+**Overall**: 25/29+ tasks | 76+ tests passing | 8/8 gates green
 
 ---
 
-## Task History Archive
+## Current Focus
 
-### Session Log: 2026-01-04 (Session 1)
+### MVP-4: Relevance Scoring [TODO]
 
-**Session Focus**: Project Setup - Complete Scaffolding with Subagent Orchestration
-
-**Key Decisions**:
-1. Using XP development approach with session-based iteration
-2. Tasks.md as single source of truth for project state
-3. Following agentic framework from `.agentic-framework/`
-4. Privacy-first principles (no user tracking, local storage only)
-5. Used parallel subagents for faster setup (5 agents in parallel)
-
-**Branch**: `feature/project-setup`
-
-**Artifacts Created**:
-- `tasks.md` - Task tracking (this file)
-- `.agentic/config.yml` - Project configuration
-- `pyproject.toml` - Dependencies with ruff, pytest, mypy config
-- `Makefile` - Dev commands (install, dev, test, lint, format, typecheck)
-- `.env.example` - Environment template with all variables
-- `Dockerfile` - Simple production container
-- `src/hn_herald/__init__.py` - Package init with version
-- `src/hn_herald/config.py` - Pydantic Settings class
-- `src/hn_herald/main.py` - FastAPI app with health check
-- `src/hn_herald/api/__init__.py` - API module placeholder
-- `src/hn_herald/graph/__init__.py` - Graph module placeholder
-- `src/hn_herald/graph/nodes/__init__.py` - Nodes module placeholder
-- `src/hn_herald/services/__init__.py` - Services module placeholder
-- `src/hn_herald/models/__init__.py` - Models module placeholder
-- `src/hn_herald/callbacks/__init__.py` - Callbacks module placeholder
-- `tests/__init__.py` - Test package marker
-- `tests/conftest.py` - Pytest fixtures (profiles, mock HN data)
-
-**Subagent Orchestration**:
-- 5 parallel subagents used for project scaffolding
-- python-expert: pyproject.toml
-- devops-architect: Makefile, Dockerfile
-- backend-architect: .env.example, package structure
-
-**Quality Gates Passed**:
-- Project documentation reviewed
-- Framework structure understood
-- All placeholder files created
-
-**Next Steps**:
-- [x] Run `make install` to sync dependencies
-- [x] Run `make test` to verify setup
-- [ ] Begin MVP-1: HN API Client
-
-### Session Log: 2026-01-04 (Session 2)
-
-**Session Focus**: Testing Infrastructure & CI/CD Setup
-
-**Key Decisions**:
-1. Health endpoint tests use pytest fixtures with env vars set before imports
-2. Pre-commit hooks with ruff (lint + format) and mypy
-3. GitHub Actions CI with 4 jobs: lint, typecheck, test, build
-4. No Codecov integration (not needed)
-
-**Branch**: `feature/project-setup` (continued)
-
-**Artifacts Created**:
-- `tests/test_api.py` - Health endpoint tests (8 tests)
-- `.pre-commit-config.yaml` - Pre-commit hooks configuration
-- `.github/workflows/ci.yml` - GitHub Actions CI pipeline
-- Updated `README.md` - Product-focused documentation
-
-**Quality Gates Passed**:
-- ✅ All 8 tests passing
-- ✅ 79% test coverage (threshold: 70%)
-- ✅ Ruff linting passes
-- ✅ Ruff formatting passes
-
-**Commits**:
-- `1a095ef` - feat: complete project setup with FastAPI scaffolding
-- `98157eb` - test: add health endpoint tests and CI/CD setup
-- `d12df06` - chore: remove Codecov integration from CI
-
-### Session Log: 2026-01-04 (Session 3)
-
-**Session Focus**: MVP-1 Design Phase - HN API Client Architecture
-
-**Agent**: Architect
-
-**Key Decisions**:
-1. Use httpx for async HTTP client (already in dependencies)
-2. Use tenacity for retry logic with exponential backoff
-3. StoryType enum for type-safe story type selection
-4. Story Pydantic model with computed `hn_url` property
-5. HNClient as async context manager for proper resource cleanup
-6. Max 10 concurrent requests to respect HN API
-
-**Artifacts Created**:
-- `docs/design/hn-api-client.md` - Comprehensive design document
-
-**Design Highlights**:
-- Complete HN API reference documentation
-- Data models: Story, StoryType, HNClientError hierarchy
-- HNClient interface with async context manager pattern
-- Testing strategy: 14 unit tests + 2 integration tests
-- Error handling matrix with retry strategies
-- Implementation plan: 10 tasks, ~5 hours total
-
-**Quality Gates Passed**:
-- ✅ Requirements clearly defined with acceptance criteria
-- ✅ Architecture supports scalability and maintainability
-- ✅ Data models and interfaces documented
-- ✅ Implementation tasks broken into <4h chunks
-- ✅ Risks identified with mitigation plans
-- ✅ Testing strategy defined
-
-**Next Steps**:
-- [x] Hand off to Developer agent for implementation
-- [x] Create Story model and StoryType enum
-- [x] Implement HNClient with retry logic
-- [x] Write unit tests with mocked responses
-- [x] Write integration test against real HN API
-
-### Session Log: 2026-01-04 (Session 4)
-
-**Session Focus**: MVP-1 Implementation - HN API Client with Parallel Subagents
-
-**Agent**: Developer (3 parallel subagents)
-
-**Key Decisions**:
-1. Used parallel subagents for faster implementation (XP collective ownership)
-2. Story model with computed properties (`hn_url`, `has_external_url`)
-3. StoryType enum with endpoint property for all HN story types
-4. Async HNClient with context manager, retry logic, rate limiting
-5. Exception hierarchy: HNClientError → HNAPIError, HNTimeoutError
-6. Comprehensive unit tests with respx mocking (68 new tests)
-
-**Branch**: `feature/hn-api-client`
-
-**Artifacts Created**:
-- `src/hn_herald/models/story.py` - Story and StoryType models
-- `src/hn_herald/services/hn_client.py` - Async HN API client
-- `tests/test_models/test_story.py` - 33 Story model tests
-- `tests/test_services/test_hn_client.py` - 35 HNClient tests
-- Updated `pyproject.toml` - Added httpx/tenacity to mypy overrides
-- Updated `.pre-commit-config.yaml` - Added httpx/tenacity deps
-
-**Quality Gates Passed**:
-- ✅ 76 tests passing (8 existing + 68 new)
-- ✅ Ruff linting passes
-- ✅ Mypy type checking passes
-- ✅ Pre-commit hooks pass
-
-**Commits**:
-- `58a3582` - feat: implement HN API client with Story model and async HTTP client
-
-**Next Steps**:
-- [ ] Create PR for feature/hn-api-client
-- [ ] Begin MVP-2: Article Extraction
+| # | Task | Status | Quality Gate | Artifact |
+|---|------|--------|--------------|----------|
+| 1 | Create design document | TODO | Reviewed | `docs/design/04-relevance-scoring.md` |
+| 2 | Create scoring models | TODO | Types pass | `models/relevance.py` |
+| 3 | Implement preference matching | TODO | Unit tests | Tag-based personalization |
+| 4 | Write scoring tests | TODO | Coverage ≥70% | Integration tests |
 
 ---
 
-## Notes for Future Agents
+## Completed Milestones
 
-### Project State
+<details>
+<summary><strong>MVP-3: LLM Summarization [DONE]</strong></summary>
 
-- **Current Phase**: MVP-1 Complete - Ready for MVP-2
-- **Test Coverage**: 76 tests passing
-- **CI/CD**: ✅ GitHub Actions configured (lint, typecheck, test, build)
-- **Pre-commit**: ✅ Configured (ruff, mypy, pre-commit-hooks)
-- **Dependencies**: ✅ Installed via `make install`
-- **Design Doc**: ✅ `docs/design/hn-api-client.md`
-- **Feature Branch**: `feature/hn-api-client` pushed to origin
+| # | Task | Quality Gate | Artifact |
+|---|------|--------------|----------|
+| 1 | Create design document | Reviewed | `docs/design/03-llm-summarization.md` |
+| 2 | Create ArticleSummary model | Types pass | `models/summary.py` |
+| 3 | Create LLM service | Lint pass | `services/llm.py` |
+| 4 | Write integration tests | 11 tests | Real LLM calls |
+| 5 | Verify batch summarization | E2E pass | Single + batch working |
 
-### Key Files to Review
+</details>
 
-| File                              | Purpose                                    |
-| --------------------------------- | ------------------------------------------ |
-| `docs/product.md`                 | Product requirements and user stories      |
-| `docs/architecture.md`            | Technical design and data models           |
-| `docs/design/hn-api-client.md`    | MVP-1 HN API client design document        |
-| `tasks.md`                        | Current state and task tracking            |
-| `.agentic/config.yml`             | Project configuration for agentic workflow |
+<details>
+<summary><strong>MVP-2: Article Extraction [DONE]</strong></summary>
 
-### Technology Stack
+| # | Task | Quality Gate | Artifact |
+|---|------|--------------|----------|
+| 1 | Create Article model | Types pass | `models/article.py` |
+| 2 | Create loader service | Lint pass | `services/loader.py` |
+| 3 | Handle problematic domains | Unit tests | Skip Twitter, Reddit, etc. |
+| 4 | Add extraction tests | Coverage | Mock external URLs |
 
-| Component      | Technology        | Purpose                    |
-| -------------- | ----------------- | -------------------------- |
-| Framework      | FastAPI           | Async REST API             |
-| Templates      | Jinja2 + HTMX     | Server-side rendering      |
-| Styling        | Tailwind CSS      | Mobile-first CSS           |
-| AI Pipeline    | LangGraph         | Orchestration              |
-| LLM            | Claude Sonnet     | Summarization and scoring  |
-| Observability  | LangSmith         | Tracing and monitoring     |
-| Package Mgmt   | uv                | Fast Python dependencies   |
+</details>
 
-### Privacy-First Principles
+<details>
+<summary><strong>MVP-1: HN API Client [DONE]</strong></summary>
 
-- **No Account Required**: Use immediately without signup
-- **Local-First Storage**: Preferences in localStorage
-- **No Tracking**: No analytics or behavior logging
-- **No Server-Side Storage**: User profiles never leave browser
-- **Ephemeral Processing**: Article content processed in real-time
+| # | Task | Quality Gate | Artifact |
+|---|------|--------------|----------|
+| 1 | Create design document | Reviewed | `docs/design/01-hn-api-client.md` |
+| 2 | Create Story model | Types pass | `models/story.py` |
+| 3 | Create HN client service | Lint pass | `services/hn_client.py` |
+| 4 | Write unit tests | 68 tests | Mocked responses |
+| 5 | Write integration test | Slow marker | Real HN API |
 
-### Agent Integration Status
+</details>
 
-| Agent       | In Flow | Standalone | Notes                              |
-| ----------- | ------- | ---------- | ---------------------------------- |
-| Architect   | ✅      | ✅         | MVP-1 design complete              |
-| Developer   | ✅      | ✅         | MVP-1 implementation complete      |
-| QA          | ✅      | ✅         | 76 tests passing                   |
-| Writer      | ⏳      | ⏳         | Docs update after MVP              |
+<details>
+<summary><strong>Setup: Project Scaffolding [DONE]</strong></summary>
+
+| # | Task | Quality Gate | Artifact |
+|---|------|--------------|----------|
+| 1 | Create product.md | Reviewed | `docs/product.md` |
+| 2 | Create architecture.md | Reviewed | `docs/architecture.md` |
+| 3 | Create tasks.md | Reviewed | This file |
+| 4 | Create pyproject.toml | uv sync | Dependencies + tooling |
+| 5 | Create Makefile | Commands work | Dev automation |
+| 6 | Create .env.example | Documented | Environment template |
+| 7 | Create Dockerfile | Build passes | Production container |
+| 8 | Create package structure | Import works | `src/hn_herald/*` |
+| 9 | Create tests/conftest.py | Fixtures load | Pytest fixtures |
+| 10 | Setup pre-commit hooks | Hooks pass | ruff, mypy |
+| 11 | Setup GitHub Actions | CI green | lint, typecheck, test |
+
+</details>
 
 ---
 
 ## Definition of Done
 
-Every task must pass before marking complete:
+Every MVP must pass before merge:
 
-- [ ] All tests passing (unit, integration)
-- [ ] Code reviewed (if applicable)
-- [ ] No decrease in test coverage
-- [ ] Linting passes (ruff)
-- [ ] Type checking passes (mypy)
+- [ ] All 8 quality gates passing
+- [ ] Test coverage ≥70%
 - [ ] Documentation updated
-- [ ] tasks.md updated with status
+- [ ] tasks.md session handoff updated
+- [ ] Pre-commit hooks pass
+- [ ] Docker build successful
 
 ---
 
 ## Quick Reference
 
-### Status Icons
+### Commands
 
-| Icon | Meaning          | When to Use                     |
-| ---- | ---------------- | ------------------------------- |
-| ✅   | Complete         | Task finished and verified      |
-| 🔄   | In Progress      | Currently being worked on       |
-| ⏳   | Blocked/Pending  | Waiting on dependency           |
-| ❌   | Failed/Cancelled | Task abandoned or failed        |
+| Command | Quality Gate | Purpose |
+|---------|--------------|---------|
+| `make test` | Gate 5 | Run all tests |
+| `make lint` | Gate 3 | Run ruff |
+| `make typecheck` | Gate 2 | Run mypy |
+| `make install` | Setup | Install deps |
+| `make dev` | - | Start server |
 
-### Priority Levels
+### Git Workflow
 
-| Level | Label    | Response Time | Examples                         |
-| ----- | -------- | ------------- | -------------------------------- |
-| 🔴    | Critical | Immediate     | Blocking issues, security        |
-| 🟠    | High     | Next sprint   | Major features, core MVP         |
-| 🟡    | Medium   | This quarter  | Enhancements, nice-to-haves      |
-| 🟢    | Low      | Backlog       | Documentation, minor improvements|
+```bash
+# Session start
+git status && git branch
+make test
+
+# Feature branch
+git checkout -b feature/mvp-N-name
+
+# Commit (every 15-30 min per XP)
+make test && make lint
+git add . && git commit -m "feat: description"
+
+# Session end
+git push origin feature/name
+```
 
 ### Commit Types
 
-| Type       | Description                    |
-| ---------- | ------------------------------ |
-| `feat`     | New feature                    |
-| `fix`      | Bug fix                        |
-| `refactor` | Code change (no behavior)      |
-| `test`     | Adding tests                   |
-| `docs`     | Documentation                  |
-| `chore`    | Maintenance                    |
+`feat` | `fix` | `refactor` | `test` | `docs` | `chore`
+
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `docs/product.md` | Product requirements, XP approach |
+| `docs/architecture.md` | Technical design |
+| `docs/design/*.md` | MVP design documents |
+| `.agentic/config.yml` | Project-specific agentic config |
+| `.agentic-framework/` | Reusable agentic patterns |
+| `pyproject.toml` | Dependencies, quality gates |
