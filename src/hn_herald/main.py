@@ -9,7 +9,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -98,7 +98,7 @@ async def health_check() -> JSONResponse:
 
 
 @app.get("/")
-async def root(request: Request) -> JSONResponse:
+async def root(request: Request) -> Response:
     """Root endpoint - placeholder until templates are implemented.
 
     Returns:
