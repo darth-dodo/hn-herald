@@ -1,6 +1,7 @@
 """LLM service for article summarization.
 
 Simple service using langchain-anthropic with structured output parsing.
+Supports single article and batch summarization.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 from hn_herald.config import get_settings
 from hn_herald.models.summary import (
     ArticleSummary,
+    BatchArticleSummary,
     LLMAPIError,
     LLMRateLimitError,
     SummarizationStatus,
@@ -45,6 +47,17 @@ Given the article title and content below, generate a structured summary.
 
 {format_instructions}"""
 
+BATCH_PROMPT_TEMPLATE = """You are a technical content summarizer for HackerNews articles.
+
+Summarize each of the following articles. For each article, provide:
+1. A concise 2-3 sentence summary capturing the main points
+2. Exactly 3 key takeaways as bullet points
+3. Relevant technology/topic tags (e.g., Python, AI, Security, DevOps)
+
+{articles_section}
+
+{format_instructions}"""
+
 
 class LLMService:
     """Service for summarizing articles using an LLM.
@@ -52,6 +65,7 @@ class LLMService:
     Usage:
         service = LLMService()
         result = service.summarize_article(article)
+        results = service.summarize_articles_batch(articles)
     """
 
     def __init__(
@@ -68,8 +82,11 @@ class LLMService:
             max_tokens=max_tokens or settings.llm_max_tokens,
             api_key=settings.anthropic_api_key,  # type: ignore[call-arg]
         )
-        self._parser: PydanticOutputParser[ArticleSummary] = PydanticOutputParser(
+        self._single_parser: PydanticOutputParser[ArticleSummary] = PydanticOutputParser(
             pydantic_object=ArticleSummary
+        )
+        self._batch_parser: PydanticOutputParser[BatchArticleSummary] = PydanticOutputParser(
+            pydantic_object=BatchArticleSummary
         )
 
     def summarize_article(self, article: Article) -> SummarizedArticle:
@@ -80,7 +97,7 @@ class LLMService:
 
         try:
             response = self._call_llm(self._build_prompt(content, article.title))
-            summary = self._parser.parse(response)
+            summary = self._single_parser.parse(response)
             return self._result(article, summary=summary)
         except LLMRateLimitError as e:
             return self._result(article, status=SummarizationStatus.API_ERROR, error=str(e))
@@ -91,15 +108,123 @@ class LLMService:
             return self._result(article, status=SummarizationStatus.PARSE_ERROR, error=str(e))
 
     def summarize_articles(self, articles: Sequence[Article]) -> list[SummarizedArticle]:
-        """Summarize multiple articles. Preserves order, handles failures gracefully."""
+        """Summarize multiple articles sequentially. Preserves order."""
         return [self.summarize_article(a) for a in articles]
+
+    def summarize_articles_batch(
+        self,
+        articles: Sequence[Article],
+    ) -> list[SummarizedArticle]:
+        """Summarize multiple articles in a single LLM call.
+
+        More efficient than sequential calls for multiple articles.
+        Falls back to NO_CONTENT for articles without content.
+
+        Args:
+            articles: Articles to summarize.
+
+        Returns:
+            List of results in same order as input articles.
+        """
+        if not articles:
+            return []
+
+        # Separate articles with and without content
+        articles_with_content, results = self._prepare_batch(articles)
+
+        if not articles_with_content:
+            return [r for r in results if r is not None]
+
+        # Process batch and fill results
+        self._process_batch(articles_with_content, results)
+
+        return [r for r in results if r is not None]
+
+    def _prepare_batch(
+        self, articles: Sequence[Article]
+    ) -> tuple[list[tuple[int, Article]], list[SummarizedArticle | None]]:
+        """Separate articles with content from those without."""
+        articles_with_content: list[tuple[int, Article]] = []
+        results: list[SummarizedArticle | None] = [None] * len(articles)
+
+        for i, article in enumerate(articles):
+            if article.content or article.hn_text:
+                articles_with_content.append((i, article))
+            else:
+                results[i] = self._result(article, status=SummarizationStatus.NO_CONTENT)
+
+        return articles_with_content, results
+
+    def _process_batch(
+        self,
+        articles_with_content: list[tuple[int, Article]],
+        results: list[SummarizedArticle | None],
+    ) -> None:
+        """Process batch API call and populate results."""
+        try:
+            batch_response = self._call_llm(
+                self._build_batch_prompt([a for _, a in articles_with_content])
+            )
+            batch_summaries = self._batch_parser.parse(batch_response)
+            self._map_batch_results(articles_with_content, batch_summaries.summaries, results)
+        except (LLMRateLimitError, LLMAPIError) as e:
+            self._fill_error_results(
+                articles_with_content, results, SummarizationStatus.API_ERROR, str(e)
+            )
+        except Exception as e:
+            logger.exception("Batch parse error")
+            self._fill_error_results(
+                articles_with_content, results, SummarizationStatus.PARSE_ERROR, str(e)
+            )
+
+    def _map_batch_results(
+        self,
+        articles_with_content: list[tuple[int, Article]],
+        summaries: list[ArticleSummary],
+        results: list[SummarizedArticle | None],
+    ) -> None:
+        """Map batch summaries back to original article positions."""
+        for (orig_idx, article), summary in zip(articles_with_content, summaries, strict=False):
+            results[orig_idx] = self._result(article, summary=summary)
+
+        # Fill any missing results (if LLM returned fewer summaries)
+        self._fill_error_results(
+            [(i, a) for i, a in articles_with_content if results[i] is None],
+            results,
+            SummarizationStatus.PARSE_ERROR,
+            "Missing summary in batch response",
+        )
+
+    def _fill_error_results(
+        self,
+        articles: list[tuple[int, Article]],
+        results: list[SummarizedArticle | None],
+        status: SummarizationStatus,
+        error: str,
+    ) -> None:
+        """Fill results with error status for given articles."""
+        for orig_idx, article in articles:
+            if results[orig_idx] is None:
+                results[orig_idx] = self._result(article, status=status, error=error)
 
     def _build_prompt(self, content: str, title: str) -> str:
         """Build prompt with format instructions."""
         return PROMPT_TEMPLATE.format(
             title=title,
             content=content,
-            format_instructions=self._parser.get_format_instructions(),
+            format_instructions=self._single_parser.get_format_instructions(),
+        )
+
+    def _build_batch_prompt(self, articles: list[Article]) -> str:
+        """Build batch prompt for multiple articles."""
+        articles_section = "\n\n".join(
+            f"---\n**Article {i + 1}**\n**Title**: {a.title}\n**Content**:\n"
+            f"{a.content or a.hn_text}\n---"
+            for i, a in enumerate(articles)
+        )
+        return BATCH_PROMPT_TEMPLATE.format(
+            articles_section=articles_section,
+            format_instructions=self._batch_parser.get_format_instructions(),
         )
 
     @retry(

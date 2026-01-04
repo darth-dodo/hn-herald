@@ -116,6 +116,27 @@ class ArticleSummary(BaseModel):
         return [tag.strip().lower() for tag in v if tag and tag.strip()]
 
 
+class BatchArticleSummary(BaseModel):
+    """Batch of LLM-generated summaries for multiple articles.
+
+    Used for efficient batch processing where multiple articles
+    are summarized in a single LLM call.
+
+    Attributes:
+        summaries: List of summaries keyed by article index (0-based).
+    """
+
+    model_config = {
+        "frozen": False,
+        "extra": "ignore",
+    }
+
+    summaries: list[ArticleSummary] = Field(
+        ...,
+        description="List of summaries in same order as input articles",
+    )
+
+
 class SummarizedArticle(BaseModel):
     """Article with its LLM-generated summary.
 

@@ -10,6 +10,7 @@ from hn_herald.models.article import (
 from hn_herald.models.story import Story, StoryType
 from hn_herald.models.summary import (
     ArticleSummary,
+    BatchArticleSummary,
     LLMAPIError,
     LLMParseError,
     LLMRateLimitError,
@@ -24,6 +25,7 @@ __all__ = [
     "ArticleLoaderError",
     "ArticleParseError",
     "ArticleSummary",
+    "BatchArticleSummary",
     "ExtractionStatus",
     "LLMAPIError",
     "LLMParseError",

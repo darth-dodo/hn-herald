@@ -405,3 +405,64 @@ class TestOutputStructureValid:
         python_related = ["python", "python3", "cpython", "jit", "performance", "asyncio"]
         has_python_tag = any(any(related in tag for related in python_related) for tag in tech_tags)
         assert has_python_tag, f"Should have Python-related tags, got: {tech_tags}"
+
+
+class TestBatchSummarization:
+    """Tests for batch summarization (single LLM call for multiple articles)."""
+
+    def test_summarize_articles_batch(self, llm_service, multiple_articles):
+        """Batch summarization in single LLM call preserves order and generates summaries.
+
+        Verifies that:
+        - Results are returned in the same order as input
+        - Each article with content has a summary
+        - Single API call is more efficient than sequential
+        """
+        results = llm_service.summarize_articles_batch(multiple_articles)
+
+        # Verify result count matches input
+        assert len(results) == len(multiple_articles), (
+            f"Expected {len(multiple_articles)} results, got {len(results)}"
+        )
+
+        # Verify order is preserved by checking story_ids
+        for i, (result, original) in enumerate(zip(results, multiple_articles, strict=True)):
+            assert result.article.story_id == original.story_id, (
+                f"Result order mismatch at index {i}"
+            )
+
+        # Verify each article with content has a summary
+        for result in results:
+            if result.article.has_content:
+                assert result.summary_data is not None, (
+                    f"Article {result.article.story_id} has content but no summary"
+                )
+                assert result.summarization_status == SummarizationStatus.SUCCESS, (
+                    f"Article {result.article.story_id} should have SUCCESS status"
+                )
+
+    def test_summarize_articles_batch_empty_list(self, llm_service):
+        """Batch summarization handles empty list gracefully."""
+        results = llm_service.summarize_articles_batch([])
+        assert results == []
+
+    def test_summarize_articles_batch_with_no_content_article(
+        self, llm_service, article_with_tech_content, article_with_no_content
+    ):
+        """Batch summarization handles mixed content articles correctly.
+
+        Articles without content should get NO_CONTENT status,
+        articles with content should be summarized.
+        """
+        articles = [article_with_tech_content, article_with_no_content]
+        results = llm_service.summarize_articles_batch(articles)
+
+        assert len(results) == 2
+
+        # First article has content - should be summarized
+        assert results[0].summarization_status == SummarizationStatus.SUCCESS
+        assert results[0].summary_data is not None
+
+        # Second article has no content - should get NO_CONTENT status
+        assert results[1].summarization_status == SummarizationStatus.NO_CONTENT
+        assert results[1].summary_data is None
