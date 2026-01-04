@@ -21,18 +21,13 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 # Set working directory
 WORKDIR /app
 
-# Copy dependency files first for better Docker layer caching
-# This allows Docker to cache the dependency installation step
-# unless pyproject.toml or uv.lock changes
+# Copy dependency files and source for installation
 COPY pyproject.toml .
 COPY uv.lock* .
-
-# Install dependencies using uv
-# --frozen ensures reproducible builds by using exact versions from lock file
-RUN uv sync --frozen
-
-# Copy application source code
 COPY src/ src/
+
+# Create venv and install the package (production dependencies only)
+RUN uv venv && uv pip install .
 
 # Expose the application port
 EXPOSE 8000
