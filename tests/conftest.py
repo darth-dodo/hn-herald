@@ -447,3 +447,194 @@ def mock_scoring_service():
         ]
     )
     return mock_service
+
+
+# =============================================================================
+# API Testing Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def test_client():
+    """Create FastAPI test client.
+
+    Returns:
+        TestClient for API testing.
+    """
+    from fastapi.testclient import TestClient
+
+    from hn_herald.main import app
+
+    return TestClient(app)
+
+
+# =============================================================================
+# Story Data Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def sample_story_data():
+    """Sample story data dict for testing Story model.
+
+    Returns:
+        Dict with all story fields.
+    """
+    return {
+        "id": 39856302,
+        "title": "Test Story Title",
+        "url": "https://example.com/article",
+        "score": 142,
+        "by": "testuser",
+        "time": 1709654321,
+        "descendants": 85,
+        "type": "story",
+        "kids": [39856400, 39856401],
+    }
+
+
+@pytest.fixture
+def sample_story_data_minimal():
+    """Minimal story data dict for testing Story model.
+
+    Returns:
+        Dict with only required story fields.
+    """
+    return {
+        "id": 39856303,
+        "title": "Minimal Story",
+        "score": 50,
+        "by": "minimaluser",
+        "time": 1709654322,
+    }
+
+
+@pytest.fixture
+def multiple_stories_data():
+    """Multiple story data dicts for batch testing.
+
+    Returns:
+        List of story data dicts.
+    """
+    return [
+        {
+            "id": 1,
+            "title": "Story 1",
+            "url": "https://example.com/1",
+            "score": 100,
+            "by": "user1",
+            "time": 1234567890,
+            "descendants": 10,
+            "type": "story",
+        },
+        {
+            "id": 2,
+            "title": "Story 2",
+            "url": "https://example.com/2",
+            "score": 200,
+            "by": "user2",
+            "time": 1234567891,
+            "descendants": 20,
+            "type": "story",
+        },
+        {
+            "id": 3,
+            "title": "Story 3",
+            "url": "https://example.com/3",
+            "score": 300,
+            "by": "user3",
+            "time": 1234567892,
+            "descendants": 30,
+            "type": "story",
+        },
+        {
+            "id": 4,
+            "title": "Story 4",
+            "url": "https://example.com/4",
+            "score": 400,
+            "by": "user4",
+            "time": 1234567893,
+            "descendants": 40,
+            "type": "story",
+        },
+        {
+            "id": 5,
+            "title": "Story 5",
+            "url": "https://example.com/5",
+            "score": 500,
+            "by": "user5",
+            "time": 1234567894,
+            "descendants": 50,
+            "type": "story",
+        },
+    ]
+
+
+@pytest.fixture
+def sample_story_data_ask_hn():
+    """Sample Ask HN story data (no external URL).
+
+    Returns:
+        Dict with Ask HN story fields (no url field).
+    """
+    return {
+        "id": 39856304,
+        "title": "Ask HN: What are your favorite testing practices?",
+        "score": 75,
+        "by": "askuser",
+        "time": 1709654323,
+        "type": "story",
+        "text": "I'm curious about what testing approaches people use...",
+    }
+
+
+@pytest.fixture
+def sample_dead_story_data():
+    """Sample dead story data.
+
+    Returns:
+        Dict with dead story fields.
+    """
+    return {
+        "id": 999,
+        "title": "Dead Story",
+        "score": 10,
+        "by": "deaduser",
+        "time": 1234567800,
+        "dead": True,
+        "type": "story",
+    }
+
+
+@pytest.fixture
+def sample_story_ids_data():
+    """Sample story IDs list.
+
+    Returns:
+        List of story IDs.
+    """
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+
+@pytest.fixture
+def mock_story_ids():
+    """Mock story IDs for HN client testing.
+
+    Returns:
+        List of 5 story IDs.
+    """
+    return [1, 2, 3, 4, 5]
+
+
+@pytest.fixture
+def sample_deleted_story_data():
+    """Sample deleted story data.
+
+    Returns:
+        Dict with deleted story fields.
+    """
+    return {
+        "id": 888,
+        "deleted": True,
+        "type": "story",
+    }

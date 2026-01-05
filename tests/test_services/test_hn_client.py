@@ -305,6 +305,62 @@ class TestFetchStory:
 class TestFetchStories:
     """Tests for HNClient.fetch_stories method."""
 
+    @pytest.fixture
+    def multiple_stories_data(self):
+        """Stories with mixed scores for filtering tests."""
+        return [
+            {
+                "id": 1,
+                "title": "Story 1",
+                "url": "https://example.com/1",
+                "score": 500,
+                "by": "user1",
+                "time": 1234567890,
+                "descendants": 10,
+                "type": "story",
+            },
+            {
+                "id": 2,
+                "title": "Story 2",
+                "url": "https://example.com/2",
+                "score": 100,
+                "by": "user2",
+                "time": 1234567891,
+                "descendants": 20,
+                "type": "story",
+            },
+            {
+                "id": 3,
+                "title": "Story 3",
+                "url": "https://example.com/3",
+                "score": 200,
+                "by": "user3",
+                "time": 1234567892,
+                "descendants": 30,
+                "type": "story",
+            },
+            {
+                "id": 4,
+                "title": "Story 4",
+                "url": "https://example.com/4",
+                "score": 25,
+                "by": "user4",
+                "time": 1234567893,
+                "descendants": 40,
+                "type": "story",
+            },
+            {
+                "id": 5,
+                "title": "Story 5",
+                "url": "https://example.com/5",
+                "score": 5,
+                "by": "user5",
+                "time": 1234567894,
+                "descendants": 50,
+                "type": "story",
+            },
+        ]
+
     @respx.mock
     async def test_fetch_stories_combines_fetch_and_returns_stories(
         self, mock_story_ids, multiple_stories_data
