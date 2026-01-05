@@ -69,7 +69,7 @@ class TestFetchHNSuccess:
         mock_client.fetch_stories.assert_called_once_with(
             story_type=mock_user_profile.fetch_type,
             limit=mock_user_profile.fetch_count,
-            min_score=mock_user_profile.min_score,
+            min_score=int(mock_user_profile.min_score),
         )
 
     @pytest.mark.asyncio
