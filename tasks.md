@@ -4,11 +4,11 @@
 
 | Field | Value |
 |-------|-------|
-| current_task | MVP-5: FastAPI Endpoints |
-| next_action | Create design document `docs/design/05-fastapi-endpoints.md` |
+| current_task | MVP-6: HTMX Templates |
+| next_action | Create design document `docs/design/06-htmx-templates.md` |
 | blockers | None |
 | quality_status | ✅ 8/8 gates passing |
-| test_coverage | 346 tests, ≥70% coverage |
+| test_coverage | 439 tests, ≥70% coverage |
 
 ---
 
@@ -65,29 +65,42 @@ We follow **Extreme Programming (XP)** principles:
 | MVP-2 | Article extraction | Can read content | ✅ Loader tests | DONE |
 | MVP-3 | LLM summarization | Get AI summaries | ✅ 11 integration tests | DONE |
 | MVP-4 | Relevance scoring | Personalized ranking | ✅ 186 scoring tests | DONE |
-| MVP-5 | FastAPI endpoints | API is callable | ⏳ API contract tests | TODO |
+| MVP-5 | FastAPI endpoints | API is callable | ✅ 15 API contract tests | DONE |
 | MVP-6 | HTMX templates | Usable web UI | ⏳ E2E smoke tests | TODO |
 | MVP-7 | Tag system UI | Can select interests | ⏳ Component tests | TODO |
 | MVP-8 | Mobile polish | Works on phones | ⏳ Lighthouse >90 | TODO |
 
-**Overall**: 29/33+ tasks | 346 tests passing | 8/8 gates green
+**Overall**: 33/37+ tasks | 439 tests passing | 8/8 gates green
 
 ---
 
 ## Current Focus
 
-### MVP-5: FastAPI Endpoints [TODO]
+### MVP-6: HTMX Templates [TODO]
 
 | # | Task | Status | Quality Gate | Artifact |
 |---|------|--------|--------------|----------|
-| 1 | Create design document | TODO | Reviewed | `docs/design/05-fastapi-endpoints.md` |
-| 2 | Create API routes | TODO | Types pass | `api/routes.py` |
-| 3 | Implement digest generation endpoint | TODO | Unit tests | POST /api/generate |
-| 4 | Write API tests | TODO | Coverage ≥70% | Contract tests |
+| 1 | Create design document | TODO | Reviewed | `docs/design/06-htmx-templates.md` |
+| 2 | Create base template | TODO | Types pass | `templates/base.html` |
+| 3 | Create digest partial | TODO | HTMX swap | `partials/digest.html` |
+| 4 | Write E2E tests | TODO | Smoke tests | Playwright tests |
 
 ---
 
 ## Completed Milestones
+
+<details>
+<summary><strong>MVP-5: FastAPI Endpoints [DONE]</strong></summary>
+
+| # | Task | Quality Gate | Artifact |
+|---|------|--------------|----------|
+| 1 | Design document exists | Reviewed | `docs/design/05-fastapi-endpoints.md` |
+| 2 | Create API routes | Types pass | `api/routes.py` |
+| 3 | Implement POST /api/generate | 15 tests | Digest generation endpoint |
+| 4 | Implement GET /api/health | Integration | Health check endpoint |
+| 5 | Write API contract tests | 93% coverage | 15 integration tests |
+
+</details>
 
 <details>
 <summary><strong>MVP-4: Relevance Scoring [DONE]</strong></summary>

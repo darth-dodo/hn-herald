@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from hn_herald import __version__
+from hn_herald.api.routes import router as api_router
 from hn_herald.config import get_settings
 
 # Configure logging
@@ -80,21 +81,8 @@ templates: Jinja2Templates | None = None
 if TEMPLATES_DIR.exists():
     templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
-
-@app.get("/api/health")
-async def health_check() -> JSONResponse:
-    """Health check endpoint for monitoring and load balancers.
-
-    Returns:
-        JSON response with health status and version information.
-    """
-    return JSONResponse(
-        content={
-            "status": "healthy",
-            "version": __version__,
-            "environment": settings.env,
-        }
-    )
+# Register API router
+app.include_router(api_router)
 
 
 @app.get("/")
