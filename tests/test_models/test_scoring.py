@@ -55,7 +55,7 @@ def sample_summarized_article(
     """Create a sample SummarizedArticle for testing."""
     return SummarizedArticle(
         article=sample_article,
-        summary_data=sample_article_summary,
+        summary=sample_article_summary,
         summarization_status=SummarizationStatus.SUCCESS,
     )
 

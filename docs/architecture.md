@@ -42,13 +42,12 @@ graph TB
         Cache[(SQLite Cache)]
 
         subgraph Pipeline["LANGGRAPH PIPELINE"]
-            Fetch[Fetch HN] --> Extract[Extract Articles<br/>WebBaseLoader]
-            Extract --> Split[Text Splitter]
-            Split --> Filter[Filter]
-            Filter --> Summarize[Summarize<br/>PydanticParser]
-            Summarize --> Score[Score]
-            Score --> Rank[Rank]
-            Rank --> Format[Format]
+            FetchHN[Fetch HN<br/>Stories] --> FetchArticle[Extract Articles<br/>Parallel via Send]
+            FetchArticle --> Filter[Filter<br/>Content Required]
+            Filter --> Summarize[Summarize<br/>Claude Batch]
+            Summarize --> Score[Score<br/>Relevance+Popularity]
+            Score --> Rank[Rank<br/>Sort & Limit]
+            Rank --> Format[Format<br/>Digest Assembly]
         end
 
         Callbacks[Progress<br/>Callbacks] -.-> HTMX
@@ -83,19 +82,19 @@ sequenceDiagram
     G->>HN: Fetch top stories
     HN-->>G: Story list
 
-    par Parallel Article Fetch
-        G->>HN: Fetch article 1
-        G->>HN: Fetch article 2
-        G->>HN: Fetch article N
+    par Parallel Article Extraction (Send Pattern)
+        G->>G: Extract article 1
+        G->>G: Extract article 2
+        G->>G: Extract article N
     end
 
-    G->>G: Filter articles
+    G->>G: Filter (content required)
     G->>C: Batch summarize
-    C-->>G: Summaries
-    G->>C: Score relevance
-    C-->>G: Scores
-    G->>G: Rank & format
-    G-->>F: Digest
+    C-->>G: Summaries + tags
+    G->>G: Score (relevance + popularity)
+    G->>G: Rank & limit
+    G->>G: Format digest with stats
+    G-->>F: Digest (Pydantic model)
     F-->>B: HTML partial (HTMX swap)
 ```
 
@@ -142,17 +141,18 @@ hn-herald/
 │       │
 │       ├── graph/
 │       │   ├── __init__.py
-│       │   ├── state.py     # TypedDict state definitions
-│       │   ├── graph.py     # LangGraph assembly
+│       │   ├── state.py     # HNState TypedDict definition ✅
+│       │   ├── graph.py     # StateGraph assembly ✅
+│       │   ├── exceptions.py # Graph-specific exceptions ✅
 │       │   └── nodes/
 │       │       ├── __init__.py
-│       │       ├── fetcher.py       # HN API fetching
-│       │       ├── extractor.py     # Article content extraction
-│       │       ├── filter.py        # Filtering logic
-│       │       ├── summarizer.py    # LLM summarization
-│       │       ├── scorer.py        # Relevance scoring
-│       │       ├── ranker.py        # Final ranking
-│       │       └── formatter.py     # Output formatting
+│       │       ├── fetch_hn.py      # HN API fetching ✅
+│       │       ├── fetch_article.py # Parallel article extraction ✅
+│       │       ├── filter.py        # Content filtering ✅
+│       │       ├── summarize.py     # LLM batch summarization ✅
+│       │       ├── score.py         # Hybrid scoring ✅
+│       │       ├── rank.py          # Sort & limit ✅
+│       │       └── format.py        # Digest assembly ✅
 │       │
 │       ├── services/
 │       │   ├── __init__.py
@@ -172,15 +172,18 @@ hn-herald/
 │           ├── story.py     # Story model ✅
 │           ├── article.py   # Article model ✅
 │           ├── summary.py   # LLM summarization models ✅
-│           └── scoring.py   # RelevanceScore, ScoredArticle ✅
+│           ├── scoring.py   # RelevanceScore, ScoredArticle ✅
+│           └── digest.py    # Digest, DigestStats models ✅
 │
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py          # Pytest fixtures
+│   ├── conftest.py          # Pytest fixtures ✅
 │   ├── unit/
 │   │   ├── models/          # Model tests ✅
-│   │   └── services/        # Service tests ✅
-│   ├── integration/         # Integration tests ✅
+│   │   ├── services/        # Service tests ✅
+│   │   └── graph/           # Graph node tests (64 tests) ✅
+│   ├── integration/
+│   │   └── graph/           # Graph integration tests (14 tests) ✅
 │   └── e2e/                 # E2E tests with Playwright ✅
 │
 └── scripts/
@@ -346,7 +349,7 @@ class Story(BaseModel):
     comments: int                  # descendants
 ```
 
-### Article (processed)
+### Article (extracted content)
 
 ```python
 class Article(BaseModel):
@@ -355,30 +358,58 @@ class Article(BaseModel):
     url: str
     hn_url: str
     hn_score: int
-    content: str | None            # Extracted text
-    summary: str | None            # AI summary
-    key_points: list[str] = []
-    tech_tags: list[str] = []
-    relevance_score: float = 0     # 0-1
-    relevance_reason: str = ""
-    final_score: float = 0         # Composite score
-    fetch_error: str | None
+    hn_comments: int
+    author: str
+    content: str | None                # Extracted text
+    word_count: int                    # Content word count
+    status: ExtractionStatus           # SUCCESS, FAILED, SKIPPED, etc.
+    error_message: str | None          # Extraction error details
 ```
 
-### Digest (output)
+### SummarizedArticle (with AI summary)
+
+```python
+class ArticleSummary(BaseModel):
+    summary: str                       # Min 20 chars
+    key_points: list[str]              # Min 1 item
+    tech_tags: list[str]
+
+class SummarizedArticle(BaseModel):
+    article: Article
+    summary_data: ArticleSummary | None
+    summarization_status: SummarizationStatus  # SUCCESS, API_ERROR, etc.
+```
+
+### ScoredArticle (with relevance scoring)
+
+```python
+class RelevanceScore(BaseModel):
+    score: float                       # 0.0-1.0
+    reason: str
+    matched_interest_tags: list[str]
+    matched_disinterest_tags: list[str]
+
+class ScoredArticle(BaseModel):
+    article: SummarizedArticle
+    relevance: RelevanceScore          # Nested relevance details
+    popularity_score: float            # HN engagement (0.0-1.0)
+    final_score: float                 # 70% relevance + 30% popularity
+```
+
+### Digest (final output)
 
 ```python
 class Digest(BaseModel):
-    articles: list[Article]
-    timestamp: datetime
-    stats: DigestStats
+    articles: list[ScoredArticle]      # Ranked and limited
+    generated_at: datetime             # ISO 8601 timestamp
+    stats: DigestStats                 # Pipeline statistics
 
 class DigestStats(BaseModel):
-    fetched: int
-    filtered: int
-    final: int
-    errors: int
-    generation_time_ms: int
+    fetched: int                       # Stories fetched from HN
+    filtered: int                      # Articles with content
+    final: int                         # Articles in digest
+    errors: int                        # Total errors encountered
+    generation_time_ms: int            # Pipeline execution time
 ```
 
 ---
@@ -418,19 +449,20 @@ class HNState(TypedDict):
     # Input
     profile: UserProfile
 
-    # Pipeline stages
-    stories: list[Story]
-    articles: Annotated[list[Article], add]  # Parallel append
-    filtered_articles: list[Article]
-    scored_articles: list[Article]
-    ranked_articles: list[Article]
+    # Pipeline stages (progressive refinement)
+    stories: list[Story]                                    # From HN API
+    articles: Annotated[list[Article], add]                # Parallel append via Send
+    filtered_articles: list[Article]                       # Content required
+    summarized_articles: list[SummarizedArticle]           # With AI summaries
+    scored_articles: list[ScoredArticle]                   # With relevance scores
+    ranked_articles: list[ScoredArticle]                   # Sorted by final_score
 
     # Output
-    digest: Digest
+    digest: dict[str, Any]                                 # Digest model serialized
 
-    # Meta
-    timestamp: str
-    errors: Annotated[list[str], add]
+    # Metadata
+    errors: Annotated[list[str], add]                      # Accumulated errors
+    start_time: float                                      # Unix timestamp
 ```
 
 ### Pipeline Flow

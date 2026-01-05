@@ -61,17 +61,27 @@ Open [http://localhost:8000](http://localhost:8000) and start reading.
 ## How It Works
 
 ```
-HackerNews API --> Fetch Top Stories --> Extract Article Content
-                                                |
-                                                v
-Your Browser <-- Ranked Results <-- AI Scoring <-- AI Summarization
+HackerNews API --> LangGraph Pipeline --> Your Browser
+                         |
+                         v
+    ┌─────────────────────────────────────────┐
+    │  1. Fetch Stories (HN API)              │
+    │  2. Extract Articles (Parallel)         │
+    │  3. Filter Content                      │
+    │  4. Summarize (Claude AI Batch)         │
+    │  5. Score Relevance                     │
+    │  6. Rank & Format Digest                │
+    └─────────────────────────────────────────┘
 ```
 
-1. **Fetch**: Pulls top/new/best stories from HN API
-2. **Extract**: Retrieves and processes article content
-3. **Summarize**: Claude AI generates summaries and key points
-4. **Score**: Matches content against your interest profile
-5. **Deliver**: Presents ranked, summarized stories in your browser
+**LangGraph Orchestration Pipeline**:
+1. **Fetch**: Pulls top/new/best stories from HN API based on your profile
+2. **Extract**: Parallel article extraction with partial failure tolerance
+3. **Filter**: Removes articles without extractable content
+4. **Summarize**: Claude AI generates summaries and key points in batches
+5. **Score**: Hybrid scoring (70% relevance + 30% popularity)
+6. **Rank**: Sorts by final score and limits to max_articles
+7. **Format**: Assembles digest with stats and metadata
 
 ## Privacy First
 
@@ -96,23 +106,27 @@ Built with modern, production-ready tools:
 ```bash
 make install     # Install dependencies
 make dev         # Start dev server with hot reload
-make test        # Run test suite (346 tests)
+make test        # Run test suite (424 tests)
 make lint        # Run linting
 make typecheck   # Run type checking
 ```
 
 ### Project Status
 
-| Component | Status | Description |
-|-----------|--------|-------------|
-| HN API Client | ✅ Complete | Async client with retry logic |
-| Article Extraction | ✅ Complete | ArticleLoader with blocked domains, content extraction |
-| LLM Summarization | ✅ Complete | LangChain-Anthropic with batch support |
-| Relevance Scoring | ✅ Complete | Tag-based personalization with 186 tests |
-| API Endpoints | 🔄 Next | FastAPI REST API |
-| Web UI | ⏳ Planned | HTMX + Tailwind interface |
+| Component | Status | Tests | Description |
+|-----------|--------|-------|-------------|
+| HN API Client | ✅ Complete | 48 | Async client with retry logic |
+| Article Extraction | ✅ Complete | 66 | ArticleLoader with blocked domains, content extraction |
+| LLM Summarization | ✅ Complete | 42 | LangChain-Anthropic with batch support |
+| Relevance Scoring | ✅ Complete | 186 | Tag-based personalization engine |
+| LangGraph Pipeline | ✅ Complete | 78 | StateGraph orchestration with 7 nodes |
+| Digest Models | ✅ Complete | 4 | Pydantic models for digest output |
+| API Endpoints | 🔄 Next | - | FastAPI REST API |
+| Web UI | ⏳ Planned | - | HTMX + Tailwind interface |
 
-See [docs/architecture.md](docs/architecture.md) for technical details and [tasks.md](tasks.md) for current progress.
+**Total Test Coverage**: 424 tests (64 unit graph + 14 integration graph + 346 existing)
+
+See [docs/architecture.md](docs/architecture.md) for technical details and [docs/design/](docs/design/) for implementation specifications.
 
 ## Contributing
 

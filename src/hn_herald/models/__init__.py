@@ -7,6 +7,7 @@ from hn_herald.models.article import (
     ArticleParseError,
     ExtractionStatus,
 )
+from hn_herald.models.digest import Digest, DigestStats
 from hn_herald.models.profile import UserProfile
 from hn_herald.models.scoring import RelevanceScore, ScoredArticle
 from hn_herald.models.story import Story, StoryType
@@ -28,6 +29,8 @@ __all__ = [
     "ArticleParseError",
     "ArticleSummary",
     "BatchArticleSummary",
+    "Digest",
+    "DigestStats",
     "ExtractionStatus",
     "LLMAPIError",
     "LLMParseError",
