@@ -258,22 +258,21 @@
     margin-right: 12px;
   }
 
-  /* Loading indicator - minimal */
+  /* Loading indicator - spinner animation */
   .hn-loading {
-    display: none;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: var(--selected-bg);
-    border: 2px solid var(--loading-border);
-    padding: 24px;
-    z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-radius: 50%;
+    border-top-color: var(--loading-border);
+    animation: spinner 1s ease-in-out infinite;
   }
 
-  .hn-loading.active {
-    display: block;
+  @keyframes spinner {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* Article results */
@@ -299,17 +298,4 @@
     margin-top: 4px;
     line-height: 1.3;
   }
-}
-
-/* =============================================================================
- * HTMX Loading Indicator
- * ============================================================================= */
-
-.htmx-indicator {
-  display: none;
-}
-
-.htmx-request .htmx-indicator,
-.htmx-request.htmx-indicator {
-  display: block;
 }

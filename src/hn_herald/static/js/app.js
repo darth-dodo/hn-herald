@@ -116,6 +116,18 @@ function updateHiddenInput(fieldId, tags) {
   hiddenInput.value = tags.join(',');
 }
 
+// Pipeline stages with estimated times
+const PIPELINE_STAGES = [
+  { stage: 'Fetching HN stories...', duration: 2000 },
+  { stage: 'Extracting article content...', duration: 5000 },
+  { stage: 'Summarizing with AI...', duration: 8000 },
+  { stage: 'Scoring relevance...', duration: 3000 },
+  { stage: 'Ranking articles...', duration: 2000 }
+];
+
+let currentStageIndex = 0;
+let stageTimeouts = [];
+
 // Show random fun fact
 function showRandomFunFact() {
   const factDiv = document.querySelector('#fun-fact div:last-child');
@@ -125,10 +137,37 @@ function showRandomFunFact() {
   factDiv.textContent = randomFact;
 }
 
-// Start fun facts rotation
+// Update pipeline stage
+function updatePipelineStage() {
+  const statusDiv = document.querySelector('#loading > div:nth-child(2)');
+  if (!statusDiv) return;
+
+  if (currentStageIndex < PIPELINE_STAGES.length) {
+    statusDiv.textContent = PIPELINE_STAGES[currentStageIndex].stage;
+    currentStageIndex++;
+  }
+}
+
+// Start fun facts rotation with stage updates
 function startFunFacts() {
+  currentStageIndex = 0;
+  stageTimeouts = [];
   showRandomFunFact();
-  funFactInterval = setInterval(showRandomFunFact, 5000); // Change every 5 seconds
+  updatePipelineStage();
+
+  // Update stage based on estimated times
+  let totalTime = 0;
+  PIPELINE_STAGES.forEach((stage, index) => {
+    totalTime += stage.duration;
+    const timeoutId = setTimeout(() => {
+      currentStageIndex = index + 1;
+      updatePipelineStage();
+    }, totalTime);
+    stageTimeouts.push(timeoutId);
+  });
+
+  // Rotate fun facts every 5 seconds
+  funFactInterval = setInterval(showRandomFunFact, 5000);
 }
 
 // Stop fun facts rotation
@@ -137,6 +176,9 @@ function stopFunFacts() {
     clearInterval(funFactInterval);
     funFactInterval = null;
   }
+  // Clear all stage timeouts
+  stageTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+  stageTimeouts = [];
 }
 
 // Generate digest using fetch API
@@ -145,9 +187,11 @@ async function generateDigest() {
     // Save profile to localStorage
     saveProfile();
 
-    // Show loading indicator with fun facts
+    // Hide the button and show loading indicator with fun facts
+    const buttonDiv = document.querySelector('.hn-button');
     const loadingDiv = document.getElementById('loading');
     const resultsDiv = document.getElementById('results');
+    if (buttonDiv) buttonDiv.style.display = 'none';
     if (loadingDiv) {
       loadingDiv.style.display = 'block';
       startFunFacts();
@@ -179,6 +223,7 @@ async function generateDigest() {
     // Hide loading indicator and stop fun facts
     stopFunFacts();
     if (loadingDiv) loadingDiv.style.display = 'none';
+    if (buttonDiv) buttonDiv.style.display = 'block';
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -199,10 +244,12 @@ async function generateDigest() {
     }
   } catch (error) {
     console.error('Failed to generate digest:', error);
+    const buttonDiv = document.querySelector('.hn-button');
     const loadingDiv = document.getElementById('loading');
     const resultsDiv = document.getElementById('results');
     stopFunFacts();
     if (loadingDiv) loadingDiv.style.display = 'none';
+    if (buttonDiv) buttonDiv.style.display = 'block';
     if (resultsDiv) {
       resultsDiv.innerHTML = `<div style="color: #cc0000; padding: 16px;">Error: ${error.message}</div>`;
     }
