@@ -22,7 +22,7 @@ from hn_herald.models.scoring import ScoredArticle  # noqa: TC001
 logger = logging.getLogger(__name__)
 
 # Create router with versioned prefix
-router = APIRouter(prefix="/api", tags=["digest"])
+router = APIRouter(prefix="/api/v1", tags=["digest"])
 
 
 class GenerateDigestRequest(BaseModel):
@@ -149,7 +149,7 @@ def _scored_article_to_response(article: ScoredArticle) -> DigestArticleResponse
 
 
 @router.post(
-    "/generate",
+    "/digest",
     response_model=GenerateDigestResponse,
     status_code=status.HTTP_200_OK,
     responses={
@@ -188,6 +188,10 @@ async def generate_digest(request: GenerateDigestRequest) -> GenerateDigestRespo
         HTTPException 400: Invalid user profile or request.
         HTTPException 500: Pipeline execution failed.
         HTTPException 503: External service unavailable.
+
+    Note:
+        This endpoint returns JSON by default. HTMX template rendering
+        will be added when templates are implemented.
     """
     start_time = time.monotonic()
     logger.info(f"Generating digest for profile: {request.profile.model_dump()}")

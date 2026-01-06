@@ -4,7 +4,7 @@
 # Package Manager: uv (https://github.com/astral-sh/uv)
 # =============================================================================
 
-.PHONY: all install dev test test-cov lint format typecheck clean css build docker-build docker-run help
+.PHONY: all install install-node dev dev-css test test-cov lint format typecheck clean css css-watch build docker-build docker-run help
 
 # Default target
 all: install lint typecheck test
@@ -17,6 +17,10 @@ all: install lint typecheck test
 install:
 	uv sync
 
+## Install Node.js dependencies (Tailwind CSS)
+install-node:
+	npm install
+
 # =============================================================================
 # Development
 # =============================================================================
@@ -24,6 +28,10 @@ install:
 ## Run development server with hot reload
 dev:
 	uv run uvicorn hn_herald.main:app --reload --host 0.0.0.0 --port 8000
+
+## Run Tailwind CSS in watch mode (for development)
+dev-css:
+	npm run watch:css
 
 # =============================================================================
 # Testing
@@ -57,9 +65,13 @@ typecheck:
 # Build
 # =============================================================================
 
-## Build CSS with Tailwind (for future use)
+## Build CSS with Tailwind (minified for production)
 css:
-	npx tailwindcss -i ./src/hn_herald/static/input.css -o ./src/hn_herald/static/output.css --minify
+	npm run build:css
+
+## Watch CSS changes with Tailwind (development)
+css-watch:
+	npm run watch:css
 
 ## Build Python package
 build:
@@ -92,6 +104,8 @@ clean:
 	find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	find . -type f -name ".coverage" -delete 2>/dev/null || true
+	rm -rf node_modules 2>/dev/null || true
+	rm -f src/hn_herald/static/css/styles.css 2>/dev/null || true
 
 # =============================================================================
 # Help
@@ -102,14 +116,17 @@ help:
 	@echo "HN Herald - Available targets:"
 	@echo ""
 	@echo "  install      Install all dependencies using uv"
+	@echo "  install-node Install Node.js dependencies (Tailwind CSS)"
 	@echo "  dev          Run development server with hot reload"
+	@echo "  dev-css      Run Tailwind CSS in watch mode"
 	@echo "  test         Run all tests"
 	@echo "  test-cov     Run tests with coverage report"
 	@echo "  lint         Run linter (ruff check)"
 	@echo "  format       Format code (ruff format)"
 	@echo "  typecheck    Run type checker (mypy)"
 	@echo "  clean        Remove build artifacts and cache directories"
-	@echo "  css          Build CSS with Tailwind"
+	@echo "  css          Build CSS with Tailwind (production)"
+	@echo "  css-watch    Watch CSS changes with Tailwind (development)"
 	@echo "  build        Build Python package"
 	@echo "  docker-build Build Docker image"
 	@echo "  docker-run   Run Docker container"

@@ -87,14 +87,28 @@ app.include_router(api_router)
 
 @app.get("/")
 async def root(request: Request) -> Response:
-    """Root endpoint - placeholder until templates are implemented.
+    """Root endpoint - serves the main web interface.
 
     Returns:
-        JSON response with welcome message.
+        HTML template with predefined tags and configuration.
     """
-    # TODO: Return HTML template when implemented
     if templates and (TEMPLATES_DIR / "index.html").exists():
-        return templates.TemplateResponse("index.html", {"request": request})
+        # Predefined tag categories for tag selector
+        predefined_tags = {
+            "Development": ["python", "javascript", "rust", "go", "typescript"],
+            "AI/ML": ["ai", "machine-learning", "llm", "deep-learning", "nlp"],
+            "Systems": ["linux", "docker", "kubernetes", "devops", "cloud"],
+            "Business": ["startups", "investing", "product", "management"],
+            "Security": ["security", "privacy", "cryptography", "infosec"],
+        }
+
+        return templates.TemplateResponse(
+            "index.html",
+            {
+                "request": request,
+                "predefined_tags": predefined_tags,
+            },
+        )
 
     return JSONResponse(
         content={

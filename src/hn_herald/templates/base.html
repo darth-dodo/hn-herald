@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Privacy-first personalized HackerNews digest with AI summaries">
+
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+  <title>{% block title %}HN Herald - AI-Powered HackerNews Digest{% endblock %}</title>
+
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='/favicon.ico') }}">
+</head>
+<body>
+  <!-- HN-style themed header -->
+  <header class="hn-header">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="background-color: #ffffff; color: var(--primary-color); font-weight: bold; padding: 2px 4px; border: 1px solid #ffffff;">Y</span>
+        <span style="color: var(--header-text); font-weight: bold;">HN Herald</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="/" style="color: var(--header-text); text-decoration: none;">home</a>
+        <div>
+          <span style="color: var(--header-text); font-size: 9pt;">theme:</span>
+          <span id="theme-switcher" style="margin-left: 4px;"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="hn-container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="hn-footer">
+    Privacy-first • No tracking • Open source • Built for HN
+  </footer>
+
+  <!-- Custom JS -->
+  <script src="{{ url_for('static', path='/js/app.js') }}"></script>
+</body>
+</html>

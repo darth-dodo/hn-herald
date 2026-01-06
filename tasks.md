@@ -5,10 +5,10 @@
 | Field | Value |
 |-------|-------|
 | current_task | MVP-6: HTMX Templates |
-| next_action | Create design document `docs/design/06-htmx-templates.md` |
+| next_action | Create base template `templates/base.html` |
 | blockers | None |
 | quality_status | ✅ 8/8 gates passing |
-| test_coverage | 439 tests, ≥70% coverage |
+| test_coverage | 439 tests, 91% coverage |
 
 ---
 
@@ -76,11 +76,11 @@ We follow **Extreme Programming (XP)** principles:
 
 ## Current Focus
 
-### MVP-6: HTMX Templates [TODO]
+### MVP-6: HTMX Templates [IN PROGRESS]
 
 | # | Task | Status | Quality Gate | Artifact |
 |---|------|--------|--------------|----------|
-| 1 | Create design document | TODO | Reviewed | `docs/design/06-htmx-templates.md` |
+| 1 | Create design document | DONE | Reviewed | `docs/design/06-htmx-templates.md` |
 | 2 | Create base template | TODO | Types pass | `templates/base.html` |
 | 3 | Create digest partial | TODO | HTMX swap | `partials/digest.html` |
 | 4 | Write E2E tests | TODO | Smoke tests | Playwright tests |

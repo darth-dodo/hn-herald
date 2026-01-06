@@ -1,0 +1,315 @@
+/* =============================================================================
+ * HN Herald - Multi-Theme System
+ * =============================================================================
+ * Clean, functional design with three minimal themes:
+ * - HN Orange (default): Inspired by news.ycombinator.com
+ * - Clean White: Professional minimal light theme
+ * - Clean Dark: Easy-on-eyes minimal dark theme
+ * ============================================================================= */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+ * Theme Variables - Three Minimal Themes
+ * ============================================================================= */
+
+:root {
+  /* Default theme: HN Orange */
+  --primary-color: #ff6600;
+  --bg-color: #f6f6ef;
+  --text-color: #000000;
+  --secondary-color: #828282;
+  --border-color: #d4d4cc;
+  --header-bg: #ff6600;
+  --header-text: #000000;
+  --input-bg: #ffffff;
+  --selected-bg: #ffffff;
+  --button-bg: #ff6600;
+  --button-text: #ffffff;
+  --button-hover: #ea580c;
+  --loading-border: #ff6600;
+}
+
+[data-theme="ocean"] {
+  /* Ocean Theme - Calming blue-green */
+  --primary-color: #006d77;
+  --bg-color: #e0f2f1;
+  --text-color: #1a1a1a;
+  --secondary-color: #4a7c7e;
+  --border-color: #b2dfdb;
+  --header-bg: #00838f;
+  --header-text: #ffffff;
+  --input-bg: #ffffff;
+  --selected-bg: #f1f8f7;
+  --button-bg: #006d77;
+  --button-text: #ffffff;
+  --button-hover: #00555d;
+  --loading-border: #006d77;
+}
+
+[data-theme="dark"] {
+  /* Clean Dark Theme - Warm amber accents */
+  --primary-color: #ffa726;
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --secondary-color: #999999;
+  --border-color: #333333;
+  --header-bg: #0a0a0a;
+  --header-text: #e0e0e0;
+  --input-bg: #2a2a2a;
+  --selected-bg: #2a2a2a;
+  --button-bg: #ffa726;
+  --button-text: #000000;
+  --button-hover: #fb8c00;
+  --loading-border: #ffa726;
+}
+
+/* =============================================================================
+ * Base Styles - Typography
+ * ============================================================================= */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding-bottom: 50px; /* Space for sticky footer */
+  }
+}
+
+/* =============================================================================
+ * HN-Style Components
+ * ============================================================================= */
+
+@layer components {
+  /* Header - Themed header bar */
+  .hn-header {
+    background-color: var(--header-bg);
+    padding: 4px 8px;
+    font-size: 10pt;
+  }
+
+  /* Main container - 900px max width */
+  .hn-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 8px;
+    background-color: var(--bg-color);
+  }
+
+  /* Section headers */
+  .hn-section-title {
+    font-weight: bold;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-size: 10pt;
+    color: var(--text-color);
+  }
+
+  /* Tag links - simple text links with separators */
+  .hn-tag-link {
+    color: var(--secondary-color);
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 10pt;
+  }
+
+  .hn-tag-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+  }
+
+  /* Selected tags display */
+  .hn-selected-tags {
+    background-color: var(--selected-bg);
+    border: 1px solid var(--border-color);
+    padding: 6px 8px;
+    margin: 4px 0 8px 0;
+    min-height: 24px;
+    font-size: 10pt;
+  }
+
+  .hn-tag-selected {
+    color: var(--text-color);
+    margin-right: 8px;
+    font-size: 10pt;
+  }
+
+  .hn-tag-remove {
+    color: var(--secondary-color);
+    cursor: pointer;
+    margin-left: 2px;
+    text-decoration: none;
+  }
+
+  .hn-tag-remove:hover {
+    color: var(--primary-color);
+  }
+
+  /* Form inputs - minimal style */
+  .hn-input {
+    border: 1px solid var(--border-color);
+    padding: 4px 6px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 10pt;
+  }
+
+  .hn-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+
+  .hn-select {
+    border: 1px solid var(--border-color);
+    padding: 4px 6px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 10pt;
+  }
+
+  /* Small button for custom tags */
+  .hn-button-small {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    padding: 4px 8px;
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 9pt;
+    cursor: pointer;
+  }
+
+  .hn-button-small:hover {
+    background-color: var(--button-hover);
+  }
+
+  /* Primary button - main submit button */
+  .hn-button {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    padding: 6px 16px;
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 10pt;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 12px 0;
+  }
+
+  .hn-button:hover {
+    background-color: var(--button-hover);
+  }
+
+  /* Separator line */
+  .hn-separator {
+    border-top: 1px solid var(--border-color);
+    margin: 12px 0;
+  }
+
+  /* Empty state */
+  .hn-empty-state {
+    background-color: var(--selected-bg);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    color: var(--secondary-color);
+    font-size: 10pt;
+    text-align: center;
+  }
+
+  /* Footer - sticky at bottom */
+  .hn-footer {
+    text-align: center;
+    color: var(--secondary-color);
+    font-size: 9pt;
+    padding: 12px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 16px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--bg-color);
+  }
+
+  /* Options row - inline form controls */
+  .hn-options {
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+
+  .hn-options label {
+    color: var(--secondary-color);
+    margin-right: 4px;
+  }
+
+  .hn-options input,
+  .hn-options select {
+    margin-right: 12px;
+  }
+
+  /* Loading indicator - minimal */
+  .hn-loading {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--selected-bg);
+    border: 2px solid var(--loading-border);
+    padding: 24px;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .hn-loading.active {
+    display: block;
+  }
+
+  /* Article results */
+  .hn-article {
+    margin-bottom: 8px;
+    padding: 4px 0;
+  }
+
+  .hn-article-title {
+    font-size: 10pt;
+    color: var(--text-color);
+  }
+
+  .hn-article-meta {
+    font-size: 8pt;
+    color: var(--secondary-color);
+    margin-top: 2px;
+  }
+
+  .hn-article-summary {
+    font-size: 9pt;
+    color: var(--text-color);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+}
+
+/* =============================================================================
+ * HTMX Loading Indicator
+ * ============================================================================= */
+
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  display: block;
+}

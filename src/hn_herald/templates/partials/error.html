@@ -1,0 +1,123 @@
+{#
+  Error Display Component
+
+  Displays user-friendly error messages with retry functionality.
+
+  Variables:
+  - error_message: str - Error message to display
+  - error_type: Optional str - Type of error (api_error, validation_error, timeout, etc.)
+
+  Accessibility:
+  - ARIA alert role for screen readers
+  - Semantic error icons
+  - Clear error messaging
+  - Keyboard-accessible retry button
+
+  Mobile:
+  - Responsive layout
+  - Touch-friendly buttons
+  - Readable error text
+#}
+<div id="results" class="space-y-4">
+  <div
+    class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 sm:p-6 shadow-md"
+    role="alert"
+    aria-live="assertive">
+
+    <div class="flex items-start gap-3">
+      {# Error Icon #}
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 sm:h-6 sm:w-6 text-red-500" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+        </svg>
+      </div>
+
+      {# Error Content #}
+      <div class="flex-1 min-w-0">
+        <h3 class="text-sm sm:text-base font-medium text-red-800 mb-2">
+          Error Generating Digest
+        </h3>
+
+        {# Error Message #}
+        <div class="text-sm text-red-700 mb-4 leading-relaxed">
+          {% if error_message %}
+            {{ error_message }}
+          {% else %}
+            An unexpected error occurred while generating your digest. Please try again.
+          {% endif %}
+        </div>
+
+        {# Error Type Specific Guidance #}
+        {% if error_type == 'validation_error' %}
+        <div class="text-sm text-red-600 mb-4 bg-red-100 rounded p-3">
+          <p class="font-medium mb-1">Please check:</p>
+          <ul class="list-disc list-inside space-y-1 text-xs">
+            <li>At least one interest tag is selected</li>
+            <li>Story count is between 10-100</li>
+            <li>Article limit is between 1-50</li>
+            <li>Minimum score is between 0.0-1.0</li>
+          </ul>
+        </div>
+        {% elif error_type == 'timeout' %}
+        <div class="text-sm text-red-600 mb-4 bg-red-100 rounded p-3">
+          <p>The request took too long. Try reducing the number of stories to fetch.</p>
+        </div>
+        {% elif error_type == 'api_error' %}
+        <div class="text-sm text-red-600 mb-4 bg-red-100 rounded p-3">
+          <p>There was a problem connecting to the service. Please check your internet connection and try again.</p>
+        </div>
+        {% elif error_type == 'rate_limit' %}
+        <div class="text-sm text-red-600 mb-4 bg-red-100 rounded p-3">
+          <p>Too many requests. Please wait a moment before trying again.</p>
+        </div>
+        {% endif %}
+
+        {# Action Buttons #}
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <button
+            type="button"
+            onclick="window.location.reload()"
+            class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors min-h-[44px] sm:min-h-0">
+            Try Again
+          </button>
+
+          <button
+            type="button"
+            onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+            class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors min-h-[44px] sm:min-h-0">
+            Adjust Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Troubleshooting Tips #}
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
+    <h4 class="text-sm sm:text-base font-semibold text-blue-900 mb-3 flex items-center gap-2">
+      <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+      </svg>
+      Troubleshooting Tips
+    </h4>
+
+    <ul class="text-sm text-blue-800 space-y-2">
+      <li class="flex items-start gap-2">
+        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+        <span>Start with fewer stories (10-30) for faster results</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+        <span>Ensure you have at least one interest tag selected</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+        <span>Lower the minimum relevance score to see more results</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-blue-600 font-bold flex-shrink-0">•</span>
+        <span>Check your internet connection if errors persist</span>
+      </li>
+    </ul>
+  </div>
+</div>
