@@ -2,11 +2,21 @@
 
 ## Overview
 
-HN Herald now supports three minimal, clean themes:
+HN Herald supports three minimal, clean themes with full loading screen integration:
 
 1. **HN Orange** (default) - Classic HackerNews orange theme
 2. **Ocean** - Calming blue-green ocean theme
 3. **Dark** - Easy-on-eyes dark theme with warm amber accents
+
+## Loading Screen Features
+
+The loading screen provides real-time feedback during digest generation:
+
+- **Animated Spinner**: Theme-aware circular loading animation
+- **Pipeline Stages**: Shows current processing step (fetch → extract → summarize → score → rank)
+- **Fun Facts**: 15 HN-themed facts that rotate every 5 seconds
+- **Stage Updates**: Real-time progress indicators based on LangGraph pipeline execution
+- **Form Visibility**: Configuration remains visible so users can see their settings
 
 ## Theme Colors
 

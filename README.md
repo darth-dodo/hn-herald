@@ -38,7 +38,9 @@ Stories are ranked using a hybrid score:
 Built for on-the-go reading with:
 - Fast, responsive interface
 - Touch-friendly interactions
-- Works offline after first load
+- Three beautiful themes (HN Orange, Ocean, Dark)
+- Real-time loading indicators with pipeline stage updates
+- HN fun facts while you wait
 
 ## Quick Start
 
@@ -98,7 +100,7 @@ Built with modern, production-ready tools:
 |-----------|------------|
 | Backend | FastAPI (Python) |
 | AI Pipeline | LangGraph + Claude |
-| Frontend | HTMX + Jinja2 + Tailwind |
+| Frontend | Vanilla JS + Jinja2 + Tailwind + DaisyUI |
 | Package Manager | uv |
 
 ## Development
@@ -121,8 +123,8 @@ make typecheck   # Run type checking
 | Relevance Scoring | ✅ Complete | 186 | Tag-based personalization engine |
 | LangGraph Pipeline | ✅ Complete | 78 | StateGraph orchestration with 7 nodes |
 | Digest Models | ✅ Complete | 4 | Pydantic models for digest output |
-| API Endpoints | 🔄 Next | - | FastAPI REST API |
-| Web UI | ⏳ Planned | - | HTMX + Tailwind interface |
+| API Endpoints | ✅ Complete | - | FastAPI REST API with `/api/v1/digest` |
+| Web UI | ✅ Complete | - | Vanilla JS + Tailwind interface with themes |
 
 **Total Test Coverage**: 424 tests (64 unit graph + 14 integration graph + 346 existing)
 
