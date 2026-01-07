@@ -36,5 +36,5 @@ EXPOSE 8000
 
 # Run the FastAPI application with uvicorn
 # --host 0.0.0.0 allows connections from outside the container
-# --port 8000 matches the exposed port
-CMD ["uvicorn", "hn_herald.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# PORT environment variable support for Render compatibility (defaults to 8000)
+CMD ["sh", "-c", "uvicorn hn_herald.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
