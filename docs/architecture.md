@@ -211,7 +211,7 @@ hn-herald/
 | --------------- | ------------------------- | -------------------------------- |
 | Orchestration   | LangGraph 0.2+            | Pipeline management              |
 | LLM Interface   | LangChain-Anthropic       | Claude integration               |
-| Model           | Claude Sonnet 4           | Summarization, scoring           |
+| Model           | Claude 3.5 Haiku          | Summarization (cost-efficient)   |
 | Observability   | LangSmith                 | Tracing, debugging, monitoring   |
 | Caching         | LangChain Cache           | Response caching for performance |
 | Output Parsing  | PydanticOutputParser      | Structured JSON from LLM         |
@@ -433,10 +433,31 @@ class DigestStats(BaseModel):
 
 ### API (JSON)
 
-| Method | Path            | Description                   |
-| ------ | --------------- | ----------------------------- |
-| GET    | `/api/health`   | Health check                  |
-| POST   | `/api/generate` | Generate digest (JSON)        |
+| Method | Path                  | Description                   |
+| ------ | --------------------- | ----------------------------- |
+| GET    | `/api/v1/health`      | Health check                  |
+| POST   | `/api/v1/digest`      | Generate digest (JSON)        |
+| POST   | `/api/v1/digest/stream` | SSE stream with progress    |
+
+### Server-Sent Events (SSE) Streaming
+
+The `/api/v1/digest/stream` endpoint provides real-time pipeline progress updates:
+
+```json
+// Pipeline stages
+{"stage": "starting", "message": "Initializing pipeline..."}
+{"stage": "fetch", "message": "Fetching HN stories..."}
+{"stage": "extract", "message": "Extracting article content..."}
+{"stage": "filter", "message": "Filtering articles..."}
+{"stage": "summarize", "message": "Summarizing with AI..."}
+{"stage": "score", "message": "Scoring relevance..."}
+{"stage": "rank", "message": "Ranking articles..."}
+{"stage": "format", "message": "Formatting digest..."}
+{"stage": "complete", "digest": {...}}  // Final digest payload
+{"stage": "error", "message": "..."}     // On failure
+```
+
+**Implementation**: Uses LangGraph's `astream()` with `stream_mode="values"` to get full accumulated state after each node completes. Stage detection is data-driven via `_STATE_KEY_TO_NODE` mapping.
 
 ---
 
@@ -576,28 +597,28 @@ from hn_herald.models.summary import (
 class LLMService:
     """LLM service for article summarization."""
 
-    def __init__(self, model: str = "claude-sonnet-4-20250514"):
+    def __init__(self, model: str = "claude-3-5-haiku-20241022"):
         self.llm = ChatAnthropic(model=model, temperature=0)
 
-    async def summarize_article(
-        self, story_id: int, title: str, url: str, content: str
-    ) -> SummarizedArticle:
-        """Summarize a single article."""
-        # Returns SummarizedArticle with status tracking
+    def summarize_articles_batch(
+        self, articles: list[Article], batch_size: int | None = None
+    ) -> list[SummarizedArticle]:
+        """Summarize multiple articles in chunked batches.
 
-    async def summarize_batch(
-        self, articles: list[tuple[int, str, str, str]]
-    ) -> BatchArticleSummary:
-        """Summarize multiple articles in batch."""
-        # Processes articles concurrently with error isolation
+        Processes articles in chunks of `batch_size` (default 5) to avoid
+        LLM max_tokens truncation. Each chunk is sent as a single LLM call.
+        """
+        # Chunks articles to prevent max_tokens truncation
+        # Returns list of SummarizedArticle with status tracking
 ```
 
 **Key Features**:
-- **Batch Processing**: Efficient concurrent summarization of multiple articles
+- **Chunked Batch Processing**: Articles processed in chunks (default 5) to avoid max_tokens truncation
 - **Error Isolation**: Individual article failures do not affect batch processing
 - **Status Tracking**: Per-article status (success/failed/skipped)
 - **Structured Output**: Type-safe Pydantic models for all responses
-- **Configurable Model**: Defaults to Claude Sonnet 4
+- **Configurable Model**: Defaults to Claude 3.5 Haiku for cost efficiency
+- **Progress Logging**: Batch progress logged (e.g., "LLM batch 2/4: Processing articles 6-10 of 20")
 
 **Integration Points**:
 - Called by `summarizer.py` node in LangGraph pipeline
@@ -895,9 +916,9 @@ HN_HERALD_HOST=0.0.0.0
 HN_HERALD_PORT=8000
 
 # LLM Settings
-LLM_MODEL=claude-sonnet-4-20250514
+LLM_MODEL=claude-3-5-haiku-20241022
 LLM_TEMPERATURE=0
-LLM_MAX_TOKENS=4096
+LLM_MAX_TOKENS=8192  # Increased for batch summarization
 
 # Fetching
 HN_API_TIMEOUT=30
@@ -921,8 +942,9 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
 
-    llm_model: str = "claude-sonnet-4-20250514"
+    llm_model: str = "claude-3-5-haiku-20241022"
     llm_temperature: float = 0
+    llm_max_tokens: int = 8192  # Increased for batch summarization
 
     hn_api_timeout: int = 30
     article_fetch_timeout: int = 15

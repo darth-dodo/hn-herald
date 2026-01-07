@@ -122,13 +122,13 @@ class TestHealthEndpoint:
 
     def test_health_check_returns_200(self, client: TestClient) -> None:
         """Test that health check returns 200 OK."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
 
         assert response.status_code == status.HTTP_200_OK
 
     def test_health_check_response_format(self, client: TestClient) -> None:
         """Test that health check returns correct format."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
         data = response.json()
 
         assert "status" in data
@@ -140,7 +140,7 @@ class TestHealthEndpoint:
         """Test that health check includes version information."""
         from hn_herald import __version__
 
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
         data = response.json()
 
         assert data["version"] == __version__
@@ -151,7 +151,7 @@ class TestGenerateEndpoint:
 
     def test_generate_requires_profile(self, client: TestClient) -> None:
         """Test that generate endpoint requires profile."""
-        response = client.post("/api/generate", json={})
+        response = client.post("/api/v1/digest", json={})
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -164,7 +164,7 @@ class TestGenerateEndpoint:
             }
         }
 
-        response = client.post("/api/generate", json=invalid_profile)
+        response = client.post("/api/v1/digest", json=invalid_profile)
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -191,7 +191,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
 
         assert response.status_code == status.HTTP_200_OK
 
@@ -218,7 +218,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
         data = response.json()
 
         assert "articles" in data
@@ -251,7 +251,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
         data = response.json()
 
         stats = data["stats"]
@@ -286,7 +286,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
         data = response.json()
 
         profile_summary = data["profile_summary"]
@@ -309,7 +309,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
@@ -333,7 +333,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
@@ -360,7 +360,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
         data = response.json()
 
         if data["articles"]:
@@ -388,7 +388,7 @@ class TestAPIIntegration:
     def test_api_router_mounted(self, client: TestClient) -> None:
         """Test that API router is properly mounted."""
         # Health endpoint should exist at /api/health
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
         assert response.status_code == status.HTTP_200_OK
 
     def test_openapi_schema_available_in_dev(self, client: TestClient) -> None:
@@ -402,7 +402,7 @@ class TestAPIIntegration:
 
     def test_cors_headers_present(self, client: TestClient) -> None:
         """Test that CORS headers are present in responses."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
 
         # CORS headers should be present
         assert "access-control-allow-origin" in response.headers or response.status_code == 200

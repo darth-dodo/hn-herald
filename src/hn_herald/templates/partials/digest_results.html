@@ -1,0 +1,134 @@
+{#
+  Digest Results Container
+
+  Displays the list of scored articles with generation statistics.
+
+  Variables:
+  - articles: List[ScoredArticle] - Ranked articles in the digest
+  - stats: DigestStats - Generation statistics (fetched, filtered, final, errors, time)
+  - profile_summary: Optional dict with user's interest/disinterest tags
+
+  Accessibility:
+  - Semantic HTML structure
+  - ARIA labels for statistics
+  - Screen reader friendly empty states
+
+  Mobile:
+  - Responsive grid layout
+  - Touch-friendly cards
+  - Proper spacing on small screens
+#}
+<div id="results" class="space-y-6">
+  {# Generation Statistics #}
+  {% if stats %}
+  <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Digest Statistics</h2>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 text-sm">
+      <div class="flex flex-col">
+        <span class="text-gray-600 mb-1">Stories Fetched</span>
+        <span class="text-xl sm:text-2xl font-bold text-gray-900">{{ stats.fetched }}</span>
+      </div>
+
+      <div class="flex flex-col">
+        <span class="text-gray-600 mb-1">Filtered</span>
+        <span class="text-xl sm:text-2xl font-bold text-blue-600">{{ stats.filtered }}</span>
+      </div>
+
+      <div class="flex flex-col">
+        <span class="text-gray-600 mb-1">Final Articles</span>
+        <span class="text-xl sm:text-2xl font-bold text-green-600">{{ stats.final }}</span>
+      </div>
+
+      <div class="flex flex-col">
+        <span class="text-gray-600 mb-1">Errors</span>
+        <span class="text-xl sm:text-2xl font-bold {% if stats.errors > 0 %}text-red-600{% else %}text-gray-400{% endif %}">{{ stats.errors }}</span>
+      </div>
+
+      <div class="flex flex-col col-span-2 sm:col-span-1">
+        <span class="text-gray-600 mb-1">Generation Time</span>
+        <span class="text-xl sm:text-2xl font-bold text-gray-900">{{ "%.1f"|format(stats.generation_time_ms / 1000) }}s</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# Profile Summary (Optional) #}
+  {% if profile_summary %}
+  <div class="bg-blue-50 border-l-4 border-blue-500 rounded p-4">
+    <h3 class="text-sm font-semibold text-blue-900 mb-2">Your Profile</h3>
+    <div class="text-sm text-blue-800 space-y-1">
+      {% if profile_summary.interest_tags %}
+      <div>
+        <span class="font-medium">Interests:</span>
+        <span>{{ profile_summary.interest_tags|join(', ') }}</span>
+      </div>
+      {% endif %}
+      {% if profile_summary.disinterest_tags %}
+      <div>
+        <span class="font-medium">Filtered out:</span>
+        <span>{{ profile_summary.disinterest_tags|join(', ') }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# Articles Grid #}
+  {% if articles %}
+  <div class="space-y-4">
+    <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
+      Your Personalized Articles
+    </h2>
+
+    <div class="space-y-4" role="list" aria-label="Personalized articles">
+      {% for article in articles %}
+      <div role="listitem">
+        {% include 'partials/article_card.html' %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  {# Empty State #}
+  <div class="bg-white rounded-lg shadow-md p-8 sm:p-12 text-center">
+    <svg class="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+
+    <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+      No articles found
+    </h3>
+
+    <p class="text-sm sm:text-base text-gray-600 max-w-md mx-auto mb-6">
+      We couldn't find any articles matching your interests. Try:
+    </p>
+
+    <ul class="text-sm sm:text-base text-gray-600 max-w-md mx-auto text-left space-y-2 mb-6">
+      <li class="flex items-start gap-2">
+        <span class="text-blue-600 font-bold">•</span>
+        <span>Broadening your interest tags</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-blue-600 font-bold">•</span>
+        <span>Reducing disinterest tags</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-blue-600 font-bold">•</span>
+        <span>Lowering the minimum relevance score</span>
+      </li>
+      <li class="flex items-start gap-2">
+        <span class="text-blue-600 font-bold">•</span>
+        <span>Increasing stories to fetch</span>
+      </li>
+    </ul>
+
+    <button
+      type="button"
+      onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+      class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+      Adjust Settings
+    </button>
+  </div>
+  {% endif %}
+</div>

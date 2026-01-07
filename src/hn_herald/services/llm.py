@@ -114,14 +114,16 @@ class LLMService:
     def summarize_articles_batch(
         self,
         articles: Sequence[Article],
+        batch_size: int | None = None,
     ) -> list[SummarizedArticle]:
-        """Summarize multiple articles in a single LLM call.
+        """Summarize multiple articles in batched LLM calls.
 
         More efficient than sequential calls for multiple articles.
         Falls back to NO_CONTENT for articles without content.
 
         Args:
             articles: Articles to summarize.
+            batch_size: Max articles per LLM call (default from settings).
 
         Returns:
             List of results in same order as input articles.
@@ -129,14 +131,29 @@ class LLMService:
         if not articles:
             return []
 
+        # Get batch size from settings if not provided
+        if batch_size is None:
+            batch_size = get_settings().summary_batch_size
+
         # Separate articles with and without content
         articles_with_content, results = self._prepare_batch(articles)
 
         if not articles_with_content:
             return [r for r in results if r is not None]
 
-        # Process batch and fill results
-        self._process_batch(articles_with_content, results)
+        # Process in chunks to avoid max_tokens limit
+        total_batches = (len(articles_with_content) + batch_size - 1) // batch_size
+        for batch_num, i in enumerate(range(0, len(articles_with_content), batch_size), 1):
+            chunk = articles_with_content[i : i + batch_size]
+            logger.info(
+                "LLM batch %d/%d: Processing articles %d-%d of %d",
+                batch_num,
+                total_batches,
+                i + 1,
+                min(i + batch_size, len(articles_with_content)),
+                len(articles_with_content),
+            )
+            self._process_batch(chunk, results)
 
         return [r for r in results if r is not None]
 

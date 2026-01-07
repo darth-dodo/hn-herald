@@ -1,0 +1,23 @@
+{
+  "name": "hn-herald",
+  "version": "0.1.0",
+  "description": "Privacy-first personalized HackerNews digest with AI summaries",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/hn_herald/static/css/input.css -o ./src/hn_herald/static/css/styles.css --minify",
+    "watch:css": "tailwindcss -i ./src/hn_herald/static/css/input.css -o ./src/hn_herald/static/css/styles.css --watch",
+    "dev:css": "npm run watch:css"
+  },
+  "devDependencies": {
+    "daisyui": "^5.5.14",
+    "tailwindcss": "^3.4.0"
+  },
+  "keywords": [
+    "hackernews",
+    "ai",
+    "digest",
+    "privacy-first"
+  ],
+  "author": "",
+  "license": "MIT"
+}

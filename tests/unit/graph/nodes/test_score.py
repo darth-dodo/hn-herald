@@ -384,8 +384,8 @@ class TestScoreArticlesLogging:
         with patch("hn_herald.graph.nodes.score.ScoringService", return_value=mock_service):
             score_articles(state)
 
-        # Assert
-        assert any("Average scores" in record.message for record in caplog.records)
+        # Assert - check for score distribution log (changed from "Average scores")
+        assert any("Score distribution" in record.message for record in caplog.records)
 
     def test_score_logs_warning_on_empty(self, mock_user_profile, caplog):
         """Test score logs warning when no articles to score.

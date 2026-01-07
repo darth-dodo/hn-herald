@@ -4,11 +4,17 @@
 
 | Field | Value |
 |-------|-------|
-| current_task | MVP-6: HTMX Templates |
-| next_action | Create design document `docs/design/06-htmx-templates.md` |
+| current_task | MVP-6: Web UI Complete |
+| next_action | Deploy to production or add MVP-7 tag system |
 | blockers | None |
 | quality_status | ✅ 8/8 gates passing |
-| test_coverage | 439 tests, ≥70% coverage |
+| test_coverage | 439 tests, 91% coverage |
+
+### Recent Changes (Jan 2026)
+- **Batch summarization chunking**: Fixed max_tokens truncation by chunking articles (batch_size=5)
+- **SSE streaming**: Real-time pipeline progress via `/api/v1/digest/stream`
+- **Model switch**: Claude Sonnet → Claude 3.5 Haiku for cost efficiency
+- **Enhanced logging**: Batch progress, filter status breakdown, score distribution
 
 ---
 
@@ -66,24 +72,28 @@ We follow **Extreme Programming (XP)** principles:
 | MVP-3 | LLM summarization | Get AI summaries | ✅ 11 integration tests | DONE |
 | MVP-4 | Relevance scoring | Personalized ranking | ✅ 186 scoring tests | DONE |
 | MVP-5 | FastAPI endpoints | API is callable | ✅ 15 API contract tests | DONE |
-| MVP-6 | HTMX templates | Usable web UI | ⏳ E2E smoke tests | TODO |
+| MVP-6 | Web UI + SSE | Usable web UI | ✅ SSE streaming, themes | DONE |
 | MVP-7 | Tag system UI | Can select interests | ⏳ Component tests | TODO |
 | MVP-8 | Mobile polish | Works on phones | ⏳ Lighthouse >90 | TODO |
 
-**Overall**: 33/37+ tasks | 439 tests passing | 8/8 gates green
+**Overall**: 40/45+ tasks | 439 tests passing | 8/8 gates green
 
 ---
 
 ## Current Focus
 
-### MVP-6: HTMX Templates [TODO]
+### MVP-6: Web UI [COMPLETE]
 
 | # | Task | Status | Quality Gate | Artifact |
 |---|------|--------|--------------|----------|
-| 1 | Create design document | TODO | Reviewed | `docs/design/06-htmx-templates.md` |
-| 2 | Create base template | TODO | Types pass | `templates/base.html` |
-| 3 | Create digest partial | TODO | HTMX swap | `partials/digest.html` |
-| 4 | Write E2E tests | TODO | Smoke tests | Playwright tests |
+| 1 | Create design document | DONE | Reviewed | `docs/design/06-htmx-templates.md` |
+| 2 | Create base template | DONE | Types pass | `templates/base.html` |
+| 3 | Create digest partial | DONE | HTMX swap | `partials/digest.html` |
+| 4 | Create digest form | DONE | Form submit | `partials/digest_form.html` |
+| 5 | SSE streaming endpoint | DONE | Real-time updates | `/api/v1/digest/stream` |
+| 6 | Loading screen with fun facts | DONE | UX polish | Animated spinner + HN facts |
+| 7 | Theme system | DONE | 3 themes | HN Orange, Ocean, Dark |
+| 8 | Fix batch summarization | DONE | 100% success | Chunked batches (size=5) |
 
 ---
 

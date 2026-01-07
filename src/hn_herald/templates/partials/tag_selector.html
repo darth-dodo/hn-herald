@@ -1,0 +1,66 @@
+<div class="tag-selector" data-tag-field="{{ field_name }}">
+  <!-- Selected Tags Display -->
+  <div
+    id="{{ field_id }}-selected"
+    class="flex flex-wrap gap-2 mb-3 min-h-[2rem]"
+    role="region"
+    aria-label="Selected {{ field_name }} tags"
+    aria-live="polite">
+    <span class="text-sm text-secondary">No tags selected</span>
+  </div>
+
+  <!-- Tag Input -->
+  <div class="join w-full">
+    <input
+      type="text"
+      id="{{ field_id }}-input"
+      placeholder="{{ placeholder }}"
+      autocomplete="off"
+      class="input input-bordered join-item flex-1"
+      aria-label="{{ placeholder }}"
+      aria-describedby="{{ field_id }}-help">
+    <button
+      type="button"
+      onclick="addTagFromInput('{{ field_id }}')"
+      class="btn btn-secondary join-item"
+      aria-label="Add custom tag">
+      Add
+    </button>
+  </div>
+
+  <p id="{{ field_id }}-help" class="text-xs text-secondary mt-1">
+    Type to add custom tags (press Enter or comma) or select from suggestions below
+  </p>
+
+  <!-- Predefined Tags (Categories) -->
+  {% if categories %}
+  <div class="mt-4 space-y-3" role="region" aria-label="Predefined tag categories">
+    {% for category_name, tags in categories.items() %}
+    <div>
+      <h4 class="text-xs font-bold text-neutral uppercase mb-2">
+        {{ category_name }}
+      </h4>
+      <div class="flex flex-wrap gap-2">
+        {% for tag in tags %}
+        <button
+          type="button"
+          data-tag="{{ tag }}"
+          class="badge badge-lg badge-outline badge-primary tag-chip-suggestion"
+          onclick="addTag('{{ field_id }}', '{{ tag }}')"
+          aria-label="Add {{ tag }} tag">
+          {{ tag }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Hidden Input for Form Submission -->
+  <input
+    type="hidden"
+    name="{{ field_name }}"
+    id="{{ field_id }}-hidden"
+    value="">
+</div>

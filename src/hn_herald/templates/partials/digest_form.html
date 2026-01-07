@@ -1,0 +1,103 @@
+<form id="digest-form" onsubmit="return false;">
+
+  <!-- Interest Tags -->
+  <div class="hn-section-title">Interest Tags</div>
+  <div class="hn-selected-tags" id="interest-tags-selected">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Selected: (none) </span>
+    <a href="#" onclick="removeAllTags('interest-tags'); return false;" style="color: var(--secondary-color); font-size: 8pt; text-decoration: none;">[remove all]</a>
+  </div>
+  <div style="margin-bottom: 8px;">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Add: </span>
+    {% for category_name, tags in predefined_tags.items() %}
+      {% for tag in tags %}
+        <a href="#" class="hn-tag-link" onclick="addTag('interest-tags', '{{ tag }}'); return false;">{{ tag }}</a>
+        {% if not loop.last %} | {% endif %}
+      {% endfor %}
+      {% if not loop.last %}<br>{% endif %}
+    {% endfor %}
+  </div>
+  <div style="margin-bottom: 12px;">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Custom: </span>
+    <input
+      type="text"
+      id="custom-interest-tag"
+      placeholder="type tag"
+      class="hn-input"
+      style="width: 120px; margin-right: 4px;"
+      onkeypress="if(event.key==='Enter'){addTag('interest-tags', this.value); this.value=''; return false;}">
+    <button
+      type="button"
+      class="hn-button-small"
+      onclick="addTag('interest-tags', document.getElementById('custom-interest-tag').value); document.getElementById('custom-interest-tag').value='';">
+      add
+    </button>
+  </div>
+  <input type="hidden" name="interest_tags" id="interest-tags-hidden" value="">
+
+  <!-- Disinterest Tags -->
+  <div class="hn-section-title" style="margin-top: 16px;">Disinterest Tags</div>
+  <div class="hn-selected-tags" id="disinterest-tags-selected">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Selected: (none) </span>
+    <a href="#" onclick="removeAllTags('disinterest-tags'); return false;" style="color: var(--secondary-color); font-size: 8pt; text-decoration: none;">[remove all]</a>
+  </div>
+  <div style="margin-bottom: 8px;">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Add: </span>
+    <a href="#" class="hn-tag-link" onclick="addTag('disinterest-tags', 'crypto'); return false;">crypto</a> |
+    <a href="#" class="hn-tag-link" onclick="addTag('disinterest-tags', 'blockchain'); return false;">blockchain</a> |
+    <a href="#" class="hn-tag-link" onclick="addTag('disinterest-tags', 'nft'); return false;">nft</a> |
+    <a href="#" class="hn-tag-link" onclick="addTag('disinterest-tags', 'web3'); return false;">web3</a>
+  </div>
+  <div style="margin-bottom: 12px;">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Custom: </span>
+    <input
+      type="text"
+      id="custom-disinterest-tag"
+      placeholder="type tag"
+      class="hn-input"
+      style="width: 120px; margin-right: 4px;"
+      onkeypress="if(event.key==='Enter'){addTag('disinterest-tags', this.value); this.value=''; return false;}">
+    <button
+      type="button"
+      class="hn-button-small"
+      onclick="addTag('disinterest-tags', document.getElementById('custom-disinterest-tag').value); document.getElementById('custom-disinterest-tag').value='';">
+      add
+    </button>
+  </div>
+  <input type="hidden" name="disinterest_tags" id="disinterest-tags-hidden" value="">
+
+  <!-- Options -->
+  <div class="hn-options">
+    <label for="story-type">Story Type:</label>
+    <select id="story-type" name="story_type" class="hn-select">
+      <option value="top" selected>Top Stories</option>
+      <option value="new">New Stories</option>
+      <option value="best">Best Stories</option>
+      <option value="ask">Ask HN</option>
+      <option value="show">Show HN</option>
+    </select>
+
+    <label for="story-count">Fetch:</label>
+    <input type="number" id="story-count" name="story_count" min="10" max="100" value="30" class="hn-input" style="width: 60px;">
+
+    <label for="article-limit">Results:</label>
+    <input type="number" id="article-limit" name="article_limit" min="1" max="50" value="10" class="hn-input" style="width: 60px;">
+
+    <label for="min-score">Min Score:</label>
+    <input type="number" id="min-score" name="min_score" min="0" max="1" step="0.1" value="0.3" class="hn-input" style="width: 60px;">
+  </div>
+
+  <!-- Submit Button -->
+  <div style="text-align: center;">
+    <button type="button" class="hn-button" onclick="generateDigest()">Generate Digest</button>
+  </div>
+</form>
+
+<!-- Loading Indicator with Fun Facts -->
+<div id="loading" style="text-align: center; margin-top: 16px; display: none;">
+  <div class="hn-loading"></div>
+  <div style="color: var(--secondary-color); font-size: 9pt; margin-top: 8px;">Generating your personalized digest...</div>
+  <div id="fun-fact" style="margin-top: 16px; padding: 12px; border: 1px solid var(--border-color); background: var(--selected-bg); max-width: 600px; margin-left: auto; margin-right: auto;">
+    <div style="font-weight: bold; font-size: 9pt; color: var(--primary-color); margin-bottom: 4px;">💡 HN Fun Fact</div>
+    <div style="font-size: 9pt; color: var(--text-color);"></div>
+  </div>
+</div>

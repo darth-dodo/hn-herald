@@ -29,6 +29,8 @@ Each article gets:
 - 3-5 key points extracted from the content
 - Relevance explanation tailored to your interests
 
+Powered by Claude 3.5 Haiku with efficient batch processing (5 articles per LLM call).
+
 ### Smart Ranking
 Stories are ranked using a hybrid score:
 - **70%** relevance to your selected tags
@@ -38,7 +40,9 @@ Stories are ranked using a hybrid score:
 Built for on-the-go reading with:
 - Fast, responsive interface
 - Touch-friendly interactions
-- Works offline after first load
+- Three beautiful themes (HN Orange, Ocean, Dark)
+- Real-time loading indicators with pipeline stage updates
+- HN fun facts while you wait
 
 ## Quick Start
 
@@ -78,10 +82,12 @@ HackerNews API --> LangGraph Pipeline --> Your Browser
 1. **Fetch**: Pulls top/new/best stories from HN API based on your profile
 2. **Extract**: Parallel article extraction with partial failure tolerance
 3. **Filter**: Removes articles without extractable content
-4. **Summarize**: Claude AI generates summaries and key points in batches
+4. **Summarize**: Claude 3.5 Haiku generates summaries in chunked batches (5 articles/batch)
 5. **Score**: Hybrid scoring (70% relevance + 30% popularity)
 6. **Rank**: Sorts by final score and limits to max_articles
 7. **Format**: Assembles digest with stats and metadata
+
+**Real-time Progress**: Server-Sent Events (SSE) stream pipeline stages to the UI with animated loading indicators and HN fun facts.
 
 ## Privacy First
 
@@ -97,8 +103,9 @@ Built with modern, production-ready tools:
 | Component | Technology |
 |-----------|------------|
 | Backend | FastAPI (Python) |
-| AI Pipeline | LangGraph + Claude |
-| Frontend | HTMX + Jinja2 + Tailwind |
+| AI Pipeline | LangGraph + Claude 3.5 Haiku |
+| Streaming | Server-Sent Events (SSE) |
+| Frontend | Vanilla JS + Jinja2 + Tailwind |
 | Package Manager | uv |
 
 ## Development
@@ -121,8 +128,8 @@ make typecheck   # Run type checking
 | Relevance Scoring | ✅ Complete | 186 | Tag-based personalization engine |
 | LangGraph Pipeline | ✅ Complete | 78 | StateGraph orchestration with 7 nodes |
 | Digest Models | ✅ Complete | 4 | Pydantic models for digest output |
-| API Endpoints | 🔄 Next | - | FastAPI REST API |
-| Web UI | ⏳ Planned | - | HTMX + Tailwind interface |
+| API Endpoints | ✅ Complete | - | FastAPI REST API with `/api/v1/digest` |
+| Web UI | ✅ Complete | - | Vanilla JS + Tailwind interface with themes |
 
 **Total Test Coverage**: 424 tests (64 unit graph + 14 integration graph + 346 existing)
 
