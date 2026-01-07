@@ -116,18 +116,6 @@ function updateHiddenInput(fieldId, tags) {
   hiddenInput.value = tags.join(',');
 }
 
-// Pipeline stages with estimated times
-const PIPELINE_STAGES = [
-  { stage: 'Fetching HN stories...', duration: 2000 },
-  { stage: 'Extracting article content...', duration: 5000 },
-  { stage: 'Summarizing with AI...', duration: 8000 },
-  { stage: 'Scoring relevance...', duration: 3000 },
-  { stage: 'Ranking articles...', duration: 2000 }
-];
-
-let currentStageIndex = 0;
-let stageTimeouts = [];
-
 // Show random fun fact
 function showRandomFunFact() {
   const factDiv = document.querySelector('#fun-fact div:last-child');
@@ -137,52 +125,107 @@ function showRandomFunFact() {
   factDiv.textContent = randomFact;
 }
 
-// Update pipeline stage
-function updatePipelineStage() {
+// Update pipeline stage message
+function updatePipelineStage(message) {
   const statusDiv = document.querySelector('#loading > div:nth-child(2)');
-  if (!statusDiv) return;
-
-  if (currentStageIndex < PIPELINE_STAGES.length) {
-    statusDiv.textContent = PIPELINE_STAGES[currentStageIndex].stage;
-    currentStageIndex++;
+  if (statusDiv) {
+    statusDiv.textContent = message;
   }
 }
 
-// Start fun facts rotation with stage updates
+// Start fun facts rotation
 function startFunFacts() {
-  currentStageIndex = 0;
-  stageTimeouts = [];
   showRandomFunFact();
-  updatePipelineStage();
-
-  // Update stage based on estimated times
-  let totalTime = 0;
-  PIPELINE_STAGES.forEach((stage, index) => {
-    totalTime += stage.duration;
-    const timeoutId = setTimeout(() => {
-      currentStageIndex = index + 1;
-      updatePipelineStage();
-    }, totalTime);
-    stageTimeouts.push(timeoutId);
-  });
-
   // Rotate fun facts every 5 seconds
-  funFactInterval = setInterval(showRandomFunFact, 5000);
+  return setInterval(showRandomFunFact, 5000);
 }
 
-// Stop fun facts rotation
-function stopFunFacts() {
-  if (funFactInterval) {
-    clearInterval(funFactInterval);
-    funFactInterval = null;
+// Mock digest generation for development
+async function generateMockDigest(funFactInterval, loadingDiv, buttonDiv, resultsDiv, payload) {
+  const stages = [
+    { message: 'Fetching HN stories...', delay: 500 },
+    { message: 'Extracting article content...', delay: 1000 },
+    { message: 'Filtering articles...', delay: 500 },
+    { message: 'Summarizing with AI...', delay: 2000 },
+    { message: 'Scoring relevance...', delay: 1000 },
+    { message: 'Ranking articles...', delay: 500 }
+  ];
+
+  // Simulate pipeline stages
+  for (const stage of stages) {
+    updatePipelineStage(stage.message);
+    await new Promise(resolve => setTimeout(resolve, stage.delay));
   }
-  // Clear all stage timeouts
-  stageTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
-  stageTimeouts = [];
+
+  // Mock digest data
+  const mockDigest = {
+    articles: [
+      {
+        story_id: 1,
+        title: "Example Article: Building Real-time Applications with SSE",
+        url: "https://example.com/article1",
+        hn_url: "https://news.ycombinator.com/item?id=1",
+        hn_score: 450,
+        summary: "This article explores Server-Sent Events (SSE) as a lightweight alternative to WebSockets for real-time updates. It covers implementation patterns, browser compatibility, and use cases where SSE excels.",
+        key_points: ["SSE provides unidirectional server-to-client streaming", "Simpler protocol than WebSockets for many use cases", "Built-in reconnection and event ID tracking"],
+        tech_tags: ["sse", "real-time", "web-development", "javascript"],
+        relevance_score: 0.85,
+        relevance_reason: "Matches interest in JavaScript and web development patterns",
+        final_score: 0.82
+      },
+      {
+        story_id: 2,
+        title: "Mock Data Strategies for Frontend Development",
+        url: "https://example.com/article2",
+        hn_url: "https://news.ycombinator.com/item?id=2",
+        hn_score: 380,
+        summary: "A comprehensive guide to implementing mock data systems in frontend applications. Discusses strategies for development speed, testing, and offline functionality.",
+        key_points: ["Mock data accelerates development iteration", "Enables offline development mode", "Facilitates comprehensive testing scenarios"],
+        tech_tags: ["testing", "development", "frontend", "mock-data"],
+        relevance_score: 0.75,
+        relevance_reason: "Relevant to frontend development practices",
+        final_score: 0.72
+      }
+    ],
+    stats: {
+      stories_fetched: 50,
+      articles_extracted: 35,
+      articles_summarized: 30,
+      articles_scored: 25,
+      articles_returned: 2,
+      errors: 0,
+      generation_time_ms: 5500
+    },
+    timestamp: new Date().toISOString(),
+    profile_summary: {
+      interests: payload.profile.interest_tags,
+      disinterests: payload.profile.disinterest_tags,
+      min_score: payload.profile.min_score,
+      max_articles: payload.profile.max_articles
+    }
+  };
+
+  // Hide loading and show results
+  if (funFactInterval) clearInterval(funFactInterval);
+  if (loadingDiv) loadingDiv.style.display = 'none';
+  if (buttonDiv) buttonDiv.style.display = 'block';
+
+  console.log('🎭 Mock digest generated:', mockDigest);
+  console.log('Has stats?', !!mockDigest.stats, 'Stats:', mockDigest.stats);
+
+  if (resultsDiv) {
+    displayDigestResults(mockDigest);
+  }
 }
 
-// Generate digest using fetch API
+// Generate digest using Server-Sent Events
+// Mock mode flag - set to true to use mock data for development
+const MOCK_MODE = window.location.search.includes('mock=true');
+
 async function generateDigest() {
+  let funFactInterval = null;
+  let eventSource = null;
+
   try {
     // Save profile to localStorage
     saveProfile();
@@ -191,10 +234,12 @@ async function generateDigest() {
     const buttonDiv = document.querySelector('.hn-button');
     const loadingDiv = document.getElementById('loading');
     const resultsDiv = document.getElementById('results');
+
     if (buttonDiv) buttonDiv.style.display = 'none';
     if (loadingDiv) {
       loadingDiv.style.display = 'block';
-      startFunFacts();
+      funFactInterval = startFunFacts();
+      updatePipelineStage('Initializing pipeline...');
     }
 
     // Create the JSON payload
@@ -206,13 +251,18 @@ async function generateDigest() {
         max_articles: parseInt(document.getElementById('article-limit').value),
         fetch_type: document.getElementById('story-type').value,
         fetch_count: parseInt(document.getElementById('story-count').value)
-      }
+      },
+      // Use backend mock mode when ?mock=true is in URL
+      mock: MOCK_MODE
     };
 
     console.log('Sending digest request:', payload);
+    if (MOCK_MODE) {
+      console.log('🎭 MOCK MODE: Using backend mock data');
+    }
 
-    // Make the API request
-    const response = await fetch('/api/v1/digest', {
+    // Use fetch to POST the request and get the stream
+    const response = await fetch('/api/v1/digest/stream', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -220,34 +270,62 @@ async function generateDigest() {
       body: JSON.stringify(payload)
     });
 
-    // Hide loading indicator and stop fun facts
-    stopFunFacts();
-    if (loadingDiv) loadingDiv.style.display = 'none';
-    if (buttonDiv) buttonDiv.style.display = 'block';
-
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('API error:', errorData);
-      if (resultsDiv) {
-        resultsDiv.innerHTML = `<div style="color: #cc0000; padding: 16px;">Error: ${errorData.detail || 'Failed to generate digest'}</div>`;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // Read the stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete SSE messages
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || ''; // Keep incomplete message in buffer
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.substring(6));
+
+            if (data.stage === 'error') {
+              throw new Error(data.message);
+            } else if (data.stage === 'complete') {
+              // Hide loading and show results
+              if (funFactInterval) clearInterval(funFactInterval);
+              if (loadingDiv) loadingDiv.style.display = 'none';
+              if (buttonDiv) buttonDiv.style.display = 'block';
+
+              console.log('Digest generated successfully:', data.digest);
+              console.log('Has stats?', !!data.digest.stats, 'Stats:', data.digest.stats);
+              if (resultsDiv && data.digest.articles) {
+                displayDigestResults(data.digest);
+              }
+            } else if (data.message) {
+              // Update the pipeline stage message
+              updatePipelineStage(data.message);
+            }
+          } catch (parseError) {
+            console.error('Failed to parse SSE data:', parseError);
+          }
+        }
       }
-      return;
     }
 
-    // Parse and display the response
-    const data = await response.json();
-    console.log('Digest generated successfully:', data);
-
-    // Display results
-    if (resultsDiv && data.articles) {
-      displayDigestResults(data);
-    }
   } catch (error) {
     console.error('Failed to generate digest:', error);
     const buttonDiv = document.querySelector('.hn-button');
     const loadingDiv = document.getElementById('loading');
     const resultsDiv = document.getElementById('results');
-    stopFunFacts();
+
+    if (funFactInterval) clearInterval(funFactInterval);
     if (loadingDiv) loadingDiv.style.display = 'none';
     if (buttonDiv) buttonDiv.style.display = 'block';
     if (resultsDiv) {
@@ -258,6 +336,9 @@ async function generateDigest() {
 
 // Display digest results
 function displayDigestResults(data) {
+  console.log('displayDigestResults called with:', data);
+  console.log('Has stats?', !!data.stats, 'Stats object:', data.stats);
+
   const resultsDiv = document.getElementById('results');
   if (!resultsDiv) return;
 
@@ -285,6 +366,53 @@ function displayDigestResults(data) {
       </div>
     `;
   });
+
+  // Add pipeline statistics summary
+  if (data.stats) {
+    html += '<div class="hn-separator"></div>';
+    html += '<div class="hn-section-title">📊 Pipeline Statistics</div>';
+    html += '<div style="background: var(--selected-bg); border: 1px solid var(--border-color); padding: 12px; margin-bottom: 16px;">';
+
+    // Processing funnel
+    html += '<div style="font-size: 10pt; margin-bottom: 12px;">';
+    html += '<div style="font-weight: bold; margin-bottom: 8px; color: var(--text-color);">Processing Funnel:</div>';
+    html += '<div style="font-size: 9pt; color: var(--secondary-color); margin-left: 12px;">';
+    html += `→ <strong>${data.stats.stories_fetched}</strong> stories fetched from HN<br>`;
+    html += `→ <strong>${data.stats.articles_extracted}</strong> articles extracted (${((data.stats.articles_extracted / data.stats.stories_fetched) * 100).toFixed(1)}% success)<br>`;
+    html += `→ <strong>${data.stats.articles_summarized}</strong> articles summarized with AI<br>`;
+    html += `→ <strong>${data.stats.articles_scored}</strong> articles scored for relevance<br>`;
+    html += `→ <strong>${data.stats.articles_returned}</strong> articles in final digest`;
+    html += '</div>';
+    html += '</div>';
+
+    // Performance metrics
+    html += '<div style="font-size: 10pt; margin-bottom: 12px;">';
+    html += '<div style="font-weight: bold; margin-bottom: 8px; color: var(--text-color);">Performance:</div>';
+    html += '<div style="font-size: 9pt; color: var(--secondary-color); margin-left: 12px;">';
+    html += `⚡ Generation time: <strong>${(data.stats.generation_time_ms / 1000).toFixed(2)}s</strong><br>`;
+    html += `⚡ Avg time per article: <strong>${(data.stats.generation_time_ms / data.stats.articles_returned).toFixed(0)}ms</strong><br>`;
+    html += `⚡ Processing rate: <strong>${((data.stats.articles_summarized / (data.stats.generation_time_ms / 1000))).toFixed(1)} articles/sec</strong>`;
+    html += '</div>';
+    html += '</div>';
+
+    // Quality metrics
+    html += '<div style="font-size: 10pt;">';
+    html += '<div style="font-weight: bold; margin-bottom: 8px; color: var(--text-color);">Quality:</div>';
+    html += '<div style="font-size: 9pt; color: var(--secondary-color); margin-left: 12px;">';
+    const extractionRate = ((data.stats.articles_extracted / data.stats.stories_fetched) * 100).toFixed(1);
+    const filterRate = ((data.stats.articles_returned / data.stats.articles_scored) * 100).toFixed(1);
+    html += `✓ Extraction success rate: <strong>${extractionRate}%</strong><br>`;
+    html += `✓ Filter pass rate: <strong>${filterRate}%</strong> (min_score=${data.profile_summary.min_score})<br>`;
+    if (data.stats.errors > 0) {
+      html += `⚠ Errors encountered: <strong>${data.stats.errors}</strong>`;
+    } else {
+      html += `✓ No errors encountered`;
+    }
+    html += '</div>';
+    html += '</div>';
+
+    html += '</div>';
+  }
 
   html += '</div>';
   resultsDiv.innerHTML = html;

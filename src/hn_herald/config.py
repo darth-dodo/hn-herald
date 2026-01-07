@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # LLM Settings
-    llm_model: str = "claude-sonnet-4-20250514"
+    llm_model: str = "claude-3-5-haiku-20241022"
     llm_temperature: float = 0.0
     llm_max_tokens: int = 4096
 

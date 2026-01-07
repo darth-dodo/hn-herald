@@ -6,14 +6,21 @@ HackerNews digests via the LangGraph pipeline.
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import time
 from datetime import datetime  # noqa: TC003
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 
+from hn_herald.api.mocks import generate_mock_digest_stream
 from hn_herald.graph.graph import create_hn_graph
 from hn_herald.models.digest import Digest
 from hn_herald.models.profile import UserProfile  # noqa: TC001
@@ -30,11 +37,16 @@ class GenerateDigestRequest(BaseModel):
 
     Attributes:
         profile: User preferences for personalization.
+        mock: Whether to use mock data instead of real API calls.
     """
 
     profile: UserProfile = Field(
         ...,
         description="User preferences for article relevance scoring",
+    )
+    mock: bool = Field(
+        default=False,
+        description="Use mock data for development/testing",
     )
 
 
@@ -118,20 +130,28 @@ class ErrorResponse(BaseModel):
     detail: str | None = None
 
 
-def _scored_article_to_response(article: ScoredArticle) -> DigestArticleResponse:
+def _scored_article_to_response(article: ScoredArticle) -> DigestArticleResponse | None:
     """Convert ScoredArticle to API response format.
 
     Args:
         article: Scored article from the pipeline.
 
     Returns:
-        Simplified article for API response.
+        Simplified article for API response, or None if summary data is missing.
     """
     # Extract summary data - it should always be present for scored articles
     # but we handle the None case for type safety
     summary_data = article.article.summary_data
     if summary_data is None:
-        raise ValueError(f"Article {article.story_id} missing summary data")
+        logger.warning(
+            f"Article {article.story_id} missing summary data, skipping",
+            extra={
+                "story_id": article.story_id,
+                "title": article.title,
+                "event_type": "missing_summary_data",
+            },
+        )
+        return None
 
     return DigestArticleResponse(
         story_id=article.story_id,
@@ -225,9 +245,14 @@ async def generate_digest(request: GenerateDigestRequest) -> GenerateDigestRespo
         # Calculate generation time
         generation_time_ms = int((time.monotonic() - start_time) * 1000)
 
-        # Build response
+        # Build response - filter out articles with missing summary data
+        article_responses = [
+            resp
+            for resp in (_scored_article_to_response(article) for article in digest.articles)
+            if resp is not None
+        ]
         response = GenerateDigestResponse(
-            articles=[_scored_article_to_response(article) for article in digest.articles],
+            articles=article_responses,
             stats=DigestStatsResponse(
                 stories_fetched=digest.stats.fetched,
                 articles_extracted=len(final_state.get("articles", [])),
@@ -300,3 +325,170 @@ async def health_check() -> dict[str, Any]:
         "version": __version__,
         "environment": settings.env,
     }
+
+
+@router.post("/digest/stream")
+async def generate_digest_stream(request: GenerateDigestRequest) -> StreamingResponse:
+    """Generate digest with Server-Sent Events for real-time progress.
+
+    Args:
+        request: Digest generation request with user profile.
+
+    Returns:
+        SSE stream with pipeline progress updates.
+    """
+    # Use mock mode if requested
+    if request.mock:
+        logger.info("Using mock data for digest generation")
+        return await generate_mock_digest_stream(request.profile)
+
+    request_id = f"req_{int(time.time() * 1000)}"
+    logger.info(
+        f"[{request_id}] SSE digest request started",
+        extra={
+            "request_id": request_id,
+            "profile": request.profile.model_dump(),
+            "event_type": "sse_request_start",
+        },
+    )
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        """Generate SSE events for pipeline progress."""
+        events_sent = 0
+        stages_completed = []
+        last_stage_sent: str | None = None
+
+        try:
+            start_time = time.monotonic()
+
+            # Send initial event
+            event = {"stage": "starting", "message": "Initializing pipeline..."}
+            yield f"data: {json.dumps(event)}\n\n"
+            events_sent += 1
+            await asyncio.sleep(0.1)
+
+            # Create LangGraph
+            graph = create_hn_graph()
+
+            initial_state: dict[str, Any] = {
+                "profile": request.profile,
+                "articles": [],
+                "errors": [],
+                "start_time": start_time,
+            }
+
+            # Use astream() to get state updates AND final state in single execution
+            # This avoids the double-execution bug of astream_events() + ainvoke()
+            final_state: dict[str, Any] = {}
+
+            # Stage mapping: node names to user-friendly messages
+            stage_messages = {
+                "fetch_hn": ("fetch", "Fetching HN stories..."),
+                "fetch_article": ("extract", "Extracting article content..."),
+                "filter": ("filter", "Filtering articles..."),
+                "summarize": ("summarize", "Summarizing with AI..."),
+                "score": ("score", "Scoring relevance..."),
+                "rank": ("rank", "Ranking articles..."),
+                "format": ("format", "Formatting digest..."),
+            }
+
+            async for state_update in graph.astream(initial_state, stream_mode="updates"):
+                # state_update is a dict with node_name -> output
+                for node_name, node_output in state_update.items():
+                    # Send stage event if we have a mapping for this node
+                    if node_name in stage_messages:
+                        stage, message = stage_messages[node_name]
+                        # Only send if different from last stage (avoid duplicates)
+                        if stage != last_stage_sent:
+                            yield f"data: {json.dumps({'stage': stage, 'message': message})}\n\n"
+                            events_sent += 1
+                            stages_completed.append(stage)
+                            last_stage_sent = stage
+
+                    # Capture the final state progressively
+                    if isinstance(node_output, dict):
+                        final_state.update(node_output)
+
+                await asyncio.sleep(0.01)  # Prevent overwhelming the client
+
+            # Extract digest from final state
+            digest_dict = final_state.get("digest")
+
+            if not digest_dict:
+                err = {"stage": "error", "message": "Pipeline completed but no digest generated"}
+                yield f"data: {json.dumps(err)}\n\n"
+                return
+
+            digest = Digest.model_validate(digest_dict)
+            generation_time_ms = int((time.monotonic() - start_time) * 1000)
+
+            # Build response - filter out articles with missing summary data
+            article_responses = [
+                resp
+                for resp in (_scored_article_to_response(article) for article in digest.articles)
+                if resp is not None
+            ]
+
+            logger.info(
+                f"[{request_id}] SSE digest completed",
+                extra={
+                    "request_id": request_id,
+                    "event_type": "sse_complete",
+                    "articles_count": len(article_responses),
+                    "generation_time_ms": generation_time_ms,
+                    "stages_completed": stages_completed,
+                    "events_sent": events_sent,
+                },
+            )
+
+            response = GenerateDigestResponse(
+                articles=article_responses,
+                stats=DigestStatsResponse(
+                    stories_fetched=digest.stats.fetched,
+                    articles_extracted=len(final_state.get("articles", [])),
+                    articles_summarized=len(final_state.get("summarized_articles", [])),
+                    articles_scored=len(final_state.get("scored_articles", [])),
+                    articles_returned=digest.stats.final,
+                    errors=digest.stats.errors,
+                    generation_time_ms=generation_time_ms,
+                ),
+                timestamp=digest.timestamp,
+                profile_summary={
+                    "interests": request.profile.interest_tags,
+                    "disinterests": request.profile.disinterest_tags,
+                    "min_score": request.profile.min_score,
+                    "max_articles": request.profile.max_articles,
+                },
+            )
+
+            # Send completion event with digest data
+            complete_event = {
+                "stage": "complete",
+                "digest": response.model_dump(mode="json"),
+            }
+            yield f"data: {json.dumps(complete_event)}\n\n"
+
+        except Exception as e:
+            logger.exception(
+                f"[{request_id}] SSE stream error",
+                extra={
+                    "request_id": request_id,
+                    "event_type": "sse_error",
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "stages_completed": stages_completed,
+                    "events_sent": events_sent,
+                },
+            )
+            err_event = {"stage": "error", "message": f"{type(e).__name__}: {e!s}"}
+            yield f"data: {json.dumps(err_event)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
