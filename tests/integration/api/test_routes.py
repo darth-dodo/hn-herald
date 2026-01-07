@@ -151,7 +151,7 @@ class TestGenerateEndpoint:
 
     def test_generate_requires_profile(self, client: TestClient) -> None:
         """Test that generate endpoint requires profile."""
-        response = client.post("/api/generate", json={})
+        response = client.post("/api/v1/digest", json={})
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -164,7 +164,7 @@ class TestGenerateEndpoint:
             }
         }
 
-        response = client.post("/api/generate", json=invalid_profile)
+        response = client.post("/api/v1/digest", json=invalid_profile)
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -191,7 +191,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
 
         assert response.status_code == status.HTTP_200_OK
 
@@ -218,7 +218,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
         data = response.json()
 
         assert "articles" in data
@@ -251,7 +251,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
         data = response.json()
 
         stats = data["stats"]
@@ -286,7 +286,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
         data = response.json()
 
         profile_summary = data["profile_summary"]
@@ -309,7 +309,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
@@ -333,7 +333,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
@@ -360,7 +360,7 @@ class TestGenerateEndpoint:
         mock_create_graph.return_value = mock_graph
 
         request_body = {"profile": sample_profile.model_dump()}
-        response = client.post("/api/generate", json=request_body)
+        response = client.post("/api/v1/digest", json=request_body)
         data = response.json()
 
         if data["articles"]:
