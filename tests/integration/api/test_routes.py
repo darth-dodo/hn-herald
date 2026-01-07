@@ -122,13 +122,13 @@ class TestHealthEndpoint:
 
     def test_health_check_returns_200(self, client: TestClient) -> None:
         """Test that health check returns 200 OK."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
 
         assert response.status_code == status.HTTP_200_OK
 
     def test_health_check_response_format(self, client: TestClient) -> None:
         """Test that health check returns correct format."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
         data = response.json()
 
         assert "status" in data
@@ -140,7 +140,7 @@ class TestHealthEndpoint:
         """Test that health check includes version information."""
         from hn_herald import __version__
 
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
         data = response.json()
 
         assert data["version"] == __version__
@@ -388,7 +388,7 @@ class TestAPIIntegration:
     def test_api_router_mounted(self, client: TestClient) -> None:
         """Test that API router is properly mounted."""
         # Health endpoint should exist at /api/health
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
         assert response.status_code == status.HTTP_200_OK
 
     def test_openapi_schema_available_in_dev(self, client: TestClient) -> None:
@@ -402,7 +402,7 @@ class TestAPIIntegration:
 
     def test_cors_headers_present(self, client: TestClient) -> None:
         """Test that CORS headers are present in responses."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
 
         # CORS headers should be present
         assert "access-control-allow-origin" in response.headers or response.status_code == 200

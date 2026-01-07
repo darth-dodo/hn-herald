@@ -97,9 +97,7 @@ async def root(request: Request) -> Response:
         predefined_tags = {
             "Development": ["python", "javascript", "rust", "go", "typescript"],
             "AI/ML": ["ai", "machine-learning", "llm", "deep-learning", "nlp"],
-            "Systems": ["linux", "docker", "kubernetes", "devops", "cloud"],
-            "Business": ["startups", "investing", "product", "management"],
-            "Security": ["security", "privacy", "cryptography", "infosec"],
+            "Business": ["startups", "investing", "product", "engineering-management"],
         }
 
         return templates.TemplateResponse(
