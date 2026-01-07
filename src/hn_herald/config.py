@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # LLM Settings
     llm_model: str = "claude-3-5-haiku-20241022"
     llm_temperature: float = 0.0
-    llm_max_tokens: int = 4096
+    llm_max_tokens: int = 8192  # Increased for batch summarization (5 articles ~1500 tokens each)
 
     # LangSmith Settings (optional)
     langchain_tracing_v2: bool = False

@@ -59,13 +59,15 @@ def score_articles(state: HNState) -> dict[str, Any]:
 
     if scored:
         # Log score distribution
-        avg_relevance = sum(a.relevance_score for a in scored) / len(scored)
         avg_final = sum(a.final_score for a in scored) / len(scored)
+        max_final = max(a.final_score for a in scored)
+        min_final = min(a.final_score for a in scored)
 
-        logger.debug(
-            "score_articles: Average scores - relevance=%.3f, final=%.3f",
-            avg_relevance,
+        logger.info(
+            "score_articles: Score distribution - avg=%.3f, min=%.3f, max=%.3f",
             avg_final,
+            min_final,
+            max_final,
         )
 
     return {

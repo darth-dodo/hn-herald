@@ -31,6 +31,37 @@ logger = logging.getLogger(__name__)
 # Create router with versioned prefix
 router = APIRouter(prefix="/api/v1", tags=["digest"])
 
+# Stage mapping: node names to user-friendly SSE stage names and messages
+_STAGE_MESSAGES: dict[str, tuple[str, str]] = {
+    "fetch_hn": ("fetch", "Fetching HN stories..."),
+    "fetch_article": ("extract", "Extracting article content..."),
+    "filter": ("filter", "Filtering articles..."),
+    "summarize": ("summarize", "Summarizing with AI..."),
+    "score": ("score", "Scoring relevance..."),
+    "rank": ("rank", "Ranking articles..."),
+    "format": ("format", "Formatting digest..."),
+}
+
+
+# State keys mapped to node names (ordered by pipeline execution, reversed for detection)
+_STATE_KEY_TO_NODE: list[tuple[str, str]] = [
+    ("digest", "format"),
+    ("ranked_articles", "rank"),
+    ("scored_articles", "score"),
+    ("summarized_articles", "summarize"),
+    ("filtered_articles", "filter"),
+    ("articles", "fetch_article"),
+    ("stories", "fetch_hn"),
+]
+
+
+def _detect_current_node(state: dict[str, Any]) -> str | None:
+    """Detect which pipeline node just completed based on state changes."""
+    for key, node in _STATE_KEY_TO_NODE:
+        if state.get(key):
+            return node
+    return None
+
 
 class GenerateDigestRequest(BaseModel):
     """Request body for digest generation endpoint.
@@ -377,42 +408,29 @@ async def generate_digest_stream(request: GenerateDigestRequest) -> StreamingRes
                 "start_time": start_time,
             }
 
-            # Use astream() to get state updates AND final state in single execution
+            # Use astream() with stream_mode="values" to get full accumulated state
             # This avoids the double-execution bug of astream_events() + ainvoke()
-            final_state: dict[str, Any] = {}
+            final_state: dict[str, Any] | None = None
+            last_node: str | None = None
 
-            # Stage mapping: node names to user-friendly messages
-            stage_messages = {
-                "fetch_hn": ("fetch", "Fetching HN stories..."),
-                "fetch_article": ("extract", "Extracting article content..."),
-                "filter": ("filter", "Filtering articles..."),
-                "summarize": ("summarize", "Summarizing with AI..."),
-                "score": ("score", "Scoring relevance..."),
-                "rank": ("rank", "Ranking articles..."),
-                "format": ("format", "Formatting digest..."),
-            }
-
-            async for state_update in graph.astream(initial_state, stream_mode="updates"):
-                # state_update is a dict with node_name -> output
-                for node_name, node_output in state_update.items():
-                    # Send stage event if we have a mapping for this node
-                    if node_name in stage_messages:
-                        stage, message = stage_messages[node_name]
-                        # Only send if different from last stage (avoid duplicates)
+            async for chunk in graph.astream(initial_state, stream_mode="values"):
+                # Detect which node just ran and send stage event if changed
+                current_node = _detect_current_node(chunk)
+                if current_node and current_node != last_node:
+                    if current_node in _STAGE_MESSAGES:
+                        stage, message = _STAGE_MESSAGES[current_node]
                         if stage != last_stage_sent:
                             yield f"data: {json.dumps({'stage': stage, 'message': message})}\n\n"
                             events_sent += 1
                             stages_completed.append(stage)
                             last_stage_sent = stage
+                    last_node = current_node
 
-                    # Capture the final state progressively
-                    if isinstance(node_output, dict):
-                        final_state.update(node_output)
-
+                final_state = chunk
                 await asyncio.sleep(0.01)  # Prevent overwhelming the client
 
             # Extract digest from final state
-            digest_dict = final_state.get("digest")
+            digest_dict = final_state.get("digest") if final_state else None
 
             if not digest_dict:
                 err = {"stage": "error", "message": "Pipeline completed but no digest generated"}
@@ -441,13 +459,15 @@ async def generate_digest_stream(request: GenerateDigestRequest) -> StreamingRes
                 },
             )
 
+            # Get stats from final_state (which is the full accumulated state)
+            fs = final_state or {}
             response = GenerateDigestResponse(
                 articles=article_responses,
                 stats=DigestStatsResponse(
                     stories_fetched=digest.stats.fetched,
-                    articles_extracted=len(final_state.get("articles", [])),
-                    articles_summarized=len(final_state.get("summarized_articles", [])),
-                    articles_scored=len(final_state.get("scored_articles", [])),
+                    articles_extracted=len(fs.get("articles", [])),
+                    articles_summarized=len(fs.get("summarized_articles", [])),
+                    articles_scored=len(fs.get("scored_articles", [])),
                     articles_returned=digest.stats.final,
                     errors=digest.stats.errors,
                     generation_time_ms=generation_time_ms,

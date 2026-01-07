@@ -57,7 +57,7 @@ def filter_articles(state: HNState) -> dict[str, Any]:
             if not (article.has_content and article.status == ExtractionStatus.SUCCESS):
                 status_counts[article.status.value] = status_counts.get(article.status.value, 0) + 1
 
-        logger.debug("filter_articles: Removed by status: %s", status_counts)
+        logger.info("filter_articles: Removed by status: %s", status_counts)
 
     return {
         "filtered_articles": filtered,
