@@ -176,6 +176,8 @@ hn-herald/
 │       │   ├── __init__.py
 │       │   └── progress.py          # HTMX progress callbacks
 │       │
+│       ├── rate_limit.py            # Rate limiting decorator ✅
+│       │
 │       └── models/
 │           ├── __init__.py
 │           ├── profile.py   # UserProfile Pydantic model ✅
@@ -446,11 +448,13 @@ class DigestStats(BaseModel):
 
 ### API (JSON)
 
-| Method | Path                  | Description                   |
-| ------ | --------------------- | ----------------------------- |
-| GET    | `/api/v1/health`      | Health check                  |
-| POST   | `/api/v1/digest`      | Generate digest (JSON)        |
-| POST   | `/api/v1/digest/stream` | SSE stream with progress    |
+| Method | Path                  | Description                   | Rate Limit |
+| ------ | --------------------- | ----------------------------- | ---------- |
+| GET    | `/api/v1/health`      | Health check                  | None       |
+| POST   | `/api/v1/digest`      | Generate digest (JSON)        | 30/min     |
+| POST   | `/api/v1/digest/stream` | SSE stream with progress    | 30/min     |
+
+> **Rate Limiting**: Digest endpoints are rate-limited to 30 requests per 60 seconds (global, not per-IP) to protect Anthropic API quotas. See [design doc](design/07-rate-limiting.md).
 
 ### Server-Sent Events (SSE) Streaming
 

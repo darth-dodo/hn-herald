@@ -116,6 +116,7 @@ HackerNews API --> LangGraph Pipeline --> Your Browser
 - **No tracking**: Zero analytics, no behavior logging
 - **Local storage**: Your preferences never leave your browser
 - **Ephemeral processing**: Article content processed in real-time, not stored
+- **Global rate limiting**: API protection without per-IP tracking (30 req/min)
 
 ## Technology
 
@@ -134,7 +135,7 @@ Built with modern, production-ready tools:
 ```bash
 make install     # Install dependencies
 make dev         # Start dev server with hot reload
-make test        # Run test suite (424 tests)
+make test        # Run test suite (469 tests)
 make lint        # Run linting
 make typecheck   # Run type checking
 ```
@@ -151,8 +152,9 @@ make typecheck   # Run type checking
 | Digest Models | ✅ Complete | 4 | Pydantic models for digest output |
 | API Endpoints | ✅ Complete | 15 | FastAPI REST API with `/api/v1/digest` |
 | Web UI | ✅ Complete | 8 | Vanilla JS + Tailwind interface with themes |
+| Rate Limiting | ✅ Complete | 30 | Privacy-first global rate limiting (30 req/min) |
 
-**Total Test Coverage**: 439 tests
+**Total Test Coverage**: 469 tests
 
 ### Documentation
 

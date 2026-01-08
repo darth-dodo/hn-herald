@@ -58,6 +58,9 @@ dependencies = [
 
     # Retry logic
     "tenacity>=8.2.0,<10.0.0",
+
+    # Rate limiting
+    "ratelimit>=2.2.1",
 ]
 
 [project.optional-dependencies]
@@ -305,8 +308,13 @@ module = [
     "httpx.*",
     "tenacity.*",
     "respx.*",
+    "ratelimit.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "hn_herald.rate_limit"
+disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
 module = "tests.*"
