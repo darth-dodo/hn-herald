@@ -222,9 +222,34 @@ async function generateMockDigest(funFactInterval, loadingDiv, buttonDiv, result
 // Mock mode flag - set to true to use mock data for development
 const MOCK_MODE = window.location.search.includes('mock=true');
 
+// Global abort controller for canceling digest generation
+let currentAbortController = null;
+let currentFunFactInterval = null;
+
+function abortDigest() {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+  }
+  if (currentFunFactInterval) {
+    clearInterval(currentFunFactInterval);
+    currentFunFactInterval = null;
+  }
+
+  // Reset UI
+  const buttonDiv = document.querySelector('.hn-button');
+  const loadingDiv = document.getElementById('loading');
+  if (loadingDiv) loadingDiv.style.display = 'none';
+  if (buttonDiv) buttonDiv.style.display = 'block';
+
+  console.log('Digest generation cancelled by user');
+}
+
 async function generateDigest() {
   let funFactInterval = null;
-  let eventSource = null;
+
+  // Create new abort controller for this request
+  currentAbortController = new AbortController();
 
   try {
     // Save profile to localStorage
@@ -239,6 +264,7 @@ async function generateDigest() {
     if (loadingDiv) {
       loadingDiv.style.display = 'block';
       funFactInterval = startFunFacts();
+      currentFunFactInterval = funFactInterval;
       updatePipelineStage('Initializing pipeline...');
     }
 
@@ -267,7 +293,8 @@ async function generateDigest() {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: currentAbortController.signal
     });
 
     if (!response.ok) {
@@ -300,6 +327,8 @@ async function generateDigest() {
             } else if (data.stage === 'complete') {
               // Hide loading and show results
               if (funFactInterval) clearInterval(funFactInterval);
+              currentFunFactInterval = null;
+              currentAbortController = null;
               if (loadingDiv) loadingDiv.style.display = 'none';
               if (buttonDiv) buttonDiv.style.display = 'block';
 
@@ -320,12 +349,20 @@ async function generateDigest() {
     }
 
   } catch (error) {
+    // Don't show error for user-initiated abort
+    if (error.name === 'AbortError') {
+      console.log('Digest generation aborted');
+      return;
+    }
+
     console.error('Failed to generate digest:', error);
     const buttonDiv = document.querySelector('.hn-button');
     const loadingDiv = document.getElementById('loading');
     const resultsDiv = document.getElementById('results');
 
     if (funFactInterval) clearInterval(funFactInterval);
+    currentFunFactInterval = null;
+    currentAbortController = null;
     if (loadingDiv) loadingDiv.style.display = 'none';
     if (buttonDiv) buttonDiv.style.display = 'block';
     if (resultsDiv) {

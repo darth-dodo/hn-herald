@@ -98,7 +98,10 @@
 <!-- Loading Indicator with Fun Facts -->
 <div id="loading" style="text-align: center; margin-top: 16px; display: none;">
   <div class="hn-loading"></div>
-  <div style="color: var(--secondary-color); font-size: 9pt; margin-top: 8px;">Generating your personalized digest...</div>
+  <div id="pipeline-stage" style="color: var(--secondary-color); font-size: 9pt; margin-top: 8px;">Generating your personalized digest...</div>
+  <div style="margin-top: 12px;">
+    <button type="button" class="hn-button-small" onclick="abortDigest()" style="background: #cc0000; color: white;">Cancel</button>
+  </div>
   <div id="fun-fact" style="margin-top: 16px; padding: 12px; border: 1px solid var(--border-color); background: var(--selected-bg); max-width: 600px; margin-left: auto; margin-right: auto;">
     <div style="font-weight: bold; font-size: 9pt; color: var(--primary-color); margin-bottom: 4px;">💡 HN Fun Fact</div>
     <div style="font-size: 9pt; color: var(--text-color);"></div>
