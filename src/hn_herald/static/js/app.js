@@ -426,9 +426,8 @@ function displayDigestResults(data) {
     html += '<div style="font-size: 10pt; margin-bottom: 12px;">';
     html += '<div style="font-weight: bold; margin-bottom: 8px; color: var(--text-color);">Performance:</div>';
     html += '<div style="font-size: 9pt; color: var(--secondary-color); margin-left: 12px;">';
-    html += `⚡ Generation time: <strong>${(data.stats.generation_time_ms / 1000).toFixed(2)}s</strong><br>`;
-    html += `⚡ Avg time per article: <strong>${(data.stats.generation_time_ms / data.stats.articles_returned).toFixed(0)}ms</strong><br>`;
-    html += `⚡ Processing rate: <strong>${((data.stats.articles_summarized / (data.stats.generation_time_ms / 1000))).toFixed(1)} articles/sec</strong>`;
+    html += `⚡ Total time: <strong>${(data.stats.generation_time_ms / 1000).toFixed(1)}s</strong><br>`;
+    html += `⚡ Avg time per article: <strong>${(data.stats.generation_time_ms / data.stats.articles_returned).toFixed(0)}ms</strong>`;
     html += '</div>';
     html += '</div>';
 
@@ -437,9 +436,9 @@ function displayDigestResults(data) {
     html += '<div style="font-weight: bold; margin-bottom: 8px; color: var(--text-color);">Quality:</div>';
     html += '<div style="font-size: 9pt; color: var(--secondary-color); margin-left: 12px;">';
     const extractionRate = ((data.stats.articles_extracted / data.stats.stories_fetched) * 100).toFixed(1);
-    const filterRate = ((data.stats.articles_returned / data.stats.articles_scored) * 100).toFixed(1);
+    const scorePassRate = ((data.stats.articles_scored / data.stats.articles_summarized) * 100).toFixed(1);
     html += `✓ Extraction success rate: <strong>${extractionRate}%</strong><br>`;
-    html += `✓ Filter pass rate: <strong>${filterRate}%</strong> (min_score=${data.profile_summary.min_score})<br>`;
+    html += `✓ Score filter pass rate: <strong>${scorePassRate}%</strong> (min_score=${data.profile_summary.min_score})<br>`;
     if (data.stats.errors > 0) {
       html += `⚠ Errors encountered: <strong>${data.stats.errors}</strong>`;
     } else {
