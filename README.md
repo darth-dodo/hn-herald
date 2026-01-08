@@ -149,10 +149,10 @@ make typecheck   # Run type checking
 | Relevance Scoring | ✅ Complete | 186 | Tag-based personalization engine |
 | LangGraph Pipeline | ✅ Complete | 78 | StateGraph orchestration with 7 nodes |
 | Digest Models | ✅ Complete | 4 | Pydantic models for digest output |
-| API Endpoints | ✅ Complete | - | FastAPI REST API with `/api/v1/digest` |
-| Web UI | ✅ Complete | - | Vanilla JS + Tailwind interface with themes |
+| API Endpoints | ✅ Complete | 15 | FastAPI REST API with `/api/v1/digest` |
+| Web UI | ✅ Complete | 8 | Vanilla JS + Tailwind interface with themes |
 
-**Total Test Coverage**: 424 tests (64 unit graph + 14 integration graph + 346 existing)
+**Total Test Coverage**: 439 tests
 
 ### Documentation
 
