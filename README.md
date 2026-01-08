@@ -4,6 +4,27 @@
 
 Stop drowning in links. Get the stories that matter to you, summarized and scored for relevance.
 
+![HN Herald - Configure your digest](docs/screenshots/01-configure-digest.png)
+
+## Screenshots
+
+<details>
+<summary>Click to see more screenshots</summary>
+
+### Loading State with Real-time Progress
+![Loading state with fun facts](docs/screenshots/02-loading-state.png)
+
+### Mobile View
+![Mobile responsive design](docs/screenshots/04-mobile-digest.png)
+
+### Dark Theme (Mobile)
+![Dark theme on mobile](docs/screenshots/05-mobile-dark-theme.png)
+
+### Ocean Theme
+![Ocean theme](docs/screenshots/06-ocean-theme.png)
+
+</details>
+
 ## Why HN Herald?
 
 HackerNews is a firehose of great content, but finding what matters to *you* takes time. HN Herald solves this by:
@@ -133,7 +154,24 @@ make typecheck   # Run type checking
 
 **Total Test Coverage**: 424 tests (64 unit graph + 14 integration graph + 346 existing)
 
-See [docs/architecture.md](docs/architecture.md) for technical details and [docs/design/](docs/design/) for implementation specifications.
+### Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/architecture.md) | Technical architecture and system design |
+| [ADRs](docs/adr/README.md) | Architecture Decision Records |
+| [Design Specs](docs/design/) | Implementation specifications |
+| [Product](docs/product.md) | Product requirements |
+
+### Key Architecture Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| [LangGraph Pipeline](docs/adr/001-langgraph-pipeline-architecture.md) | Parallel execution, error handling, LangSmith observability |
+| [SSE Streaming](docs/adr/002-sse-streaming-over-htmx.md) | Real-time progress for 15-30s pipeline |
+| [Privacy-First](docs/adr/003-privacy-first-architecture.md) | localStorage only, no server-side user data |
+| [Tag-Based Scoring](docs/adr/004-tag-based-relevance-scoring.md) | Simple, fast, explainable personalization |
+| [Haiku for Summaries](docs/adr/005-claude-haiku-for-summarization.md) | 10x cost savings with batch processing |
 
 ## Contributing
 
