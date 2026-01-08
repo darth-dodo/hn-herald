@@ -56,10 +56,19 @@ _STATE_KEY_TO_NODE: list[tuple[str, str]] = [
 ]
 
 
-def _detect_current_node(state: dict[str, Any]) -> str | None:
-    """Detect which pipeline node just completed based on state changes."""
+def _detect_current_node(state: dict[str, Any], prev_state: dict[str, Any] | None) -> str | None:
+    """Detect which pipeline node just completed based on NEW state changes.
+
+    Compares current state to previous state to find what's newly populated.
+    This correctly identifies the stage that just completed rather than
+    returning an earlier stage that still has data.
+    """
+    prev = prev_state or {}
     for key, node in _STATE_KEY_TO_NODE:
-        if state.get(key):
+        current_value = state.get(key)
+        prev_value = prev.get(key)
+        # Check if this key is newly populated or changed
+        if current_value and current_value != prev_value:
             return node
     return None
 
@@ -426,11 +435,12 @@ async def generate_digest_stream(request: GenerateDigestRequest) -> StreamingRes
             # Use astream() with stream_mode="values" to get full accumulated state
             # This avoids the double-execution bug of astream_events() + ainvoke()
             final_state: dict[str, Any] | None = None
+            prev_state: dict[str, Any] | None = None
             last_node: str | None = None
 
             async for chunk in graph.astream(initial_state, stream_mode="values"):
-                # Detect which node just ran and send stage event if changed
-                current_node = _detect_current_node(chunk)
+                # Detect which node just ran by comparing to previous state
+                current_node = _detect_current_node(chunk, prev_state)
                 if current_node and current_node != last_node:
                     if current_node in _STAGE_MESSAGES:
                         stage, message = _STAGE_MESSAGES[current_node]
@@ -441,6 +451,7 @@ async def generate_digest_stream(request: GenerateDigestRequest) -> StreamingRes
                             last_stage_sent = stage
                     last_node = current_node
 
+                prev_state = chunk
                 final_state = chunk
                 await asyncio.sleep(0.01)  # Prevent overwhelming the client
 
