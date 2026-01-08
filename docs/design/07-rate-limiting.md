@@ -1,7 +1,7 @@
 # Rate Limiting Design Document
 
 **Date**: 2026-01-08
-**Status**: Proposed
+**Status**: Implemented
 
 ---
 

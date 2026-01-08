@@ -1,6 +1,6 @@
 # HN Herald: Crash Course
 
-**Version**: 1.0 | **Tests**: 424 | **Coverage**: 70%+ | **Date**: January 2026
+**Version**: 1.1 | **Tests**: 469 | **Coverage**: 70%+ | **Date**: January 2026
 
 > 📚 **Enhanced Edition**: Includes Troubleshooting, Extension Guides, Cost Tracking, Operational Runbooks, and ADRs
 

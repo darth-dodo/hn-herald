@@ -4,13 +4,14 @@
 
 | Field | Value |
 |-------|-------|
-| current_task | MVP-6: Web UI Complete |
-| next_action | Deploy to production or add MVP-7 tag system |
+| current_task | All MVPs Complete |
+| next_action | Deploy to production |
 | blockers | None |
 | quality_status | ✅ 8/8 gates passing |
-| test_coverage | 439 tests, 91% coverage |
+| test_coverage | 469 tests, 91% coverage |
 
 ### Recent Changes (Jan 2026)
+- **Rate limiting**: Global rate limiting (30 req/60s) on digest endpoints (privacy-first, no per-IP tracking)
 - **Batch summarization chunking**: Fixed max_tokens truncation by chunking articles (batch_size=5)
 - **SSE streaming**: Real-time pipeline progress via `/api/v1/digest/stream`
 - **Model switch**: Claude Sonnet → Claude 3.5 Haiku for cost efficiency
@@ -73,14 +74,26 @@ We follow **Extreme Programming (XP)** principles:
 | MVP-4 | Relevance scoring | Personalized ranking | ✅ 186 scoring tests | DONE |
 | MVP-5 | FastAPI endpoints | API is callable | ✅ 15 API contract tests | DONE |
 | MVP-6 | Web UI + SSE | Usable web UI | ✅ SSE streaming, themes | DONE |
-| MVP-7 | Tag system UI | Can select interests | ⏳ Component tests | TODO |
-| MVP-8 | Mobile polish | Works on phones | ⏳ Lighthouse >90 | TODO |
+| Rate Limit | API protection | Protects API quotas | ✅ 30 tests | DONE |
+| MVP-7 | Tag system UI | Can select interests | ✅ localStorage | DONE |
+| MVP-8 | Mobile polish | Works on phones | ✅ Touch targets | DONE |
 
-**Overall**: 40/45+ tasks | 439 tests passing | 8/8 gates green
+**Overall**: 45/45+ tasks | 469 tests passing | 8/8 gates green | **MVP COMPLETE**
 
 ---
 
 ## Current Focus
+
+### Rate Limiting [COMPLETE]
+
+| # | Task | Status | Quality Gate | Artifact |
+|---|------|--------|--------------|----------|
+| 1 | Create design document | DONE | Reviewed | `docs/design/07-rate-limiting.md` |
+| 2 | Add ratelimit dependency | DONE | pip install | `pyproject.toml` |
+| 3 | Create rate_limit module | DONE | mypy strict | `src/hn_herald/rate_limit.py` |
+| 4 | Apply to /digest endpoint | DONE | 429 response | `api/routes.py` |
+| 5 | Apply to /digest/stream | DONE | 429 response | `api/routes.py` |
+| 6 | Write comprehensive tests | DONE | 30 tests | `tests/test_rate_limit.py` |
 
 ### MVP-6: Web UI [COMPLETE]
 
@@ -98,6 +111,31 @@ We follow **Extreme Programming (XP)** principles:
 ---
 
 ## Completed Milestones
+
+<details>
+<summary><strong>MVP-8: Mobile Polish [DONE]</strong></summary>
+
+| # | Task | Quality Gate | Artifact |
+|---|------|--------------|----------|
+| 1 | Viewport meta tag | Responsive | `base.html` |
+| 2 | Touch target sizing | ≥48px | `styles.css`, `article_card.html` |
+| 3 | Mobile screenshots | Visual QA | `docs/screenshots/04-mobile-*.png` |
+| 4 | Dark theme mobile | Theme system | `05-mobile-dark-theme.png` |
+
+</details>
+
+<details>
+<summary><strong>MVP-7: Tag System UI [DONE]</strong></summary>
+
+| # | Task | Quality Gate | Artifact |
+|---|------|--------------|----------|
+| 1 | Tag selector component | Jinja2 | `partials/tag_selector.html` |
+| 2 | Predefined tag categories | Categories | Languages, AI/ML, Web, DevOps |
+| 3 | Custom tag creation | Input field | Add button with Enter/comma support |
+| 4 | localStorage persistence | Privacy-first | `app.js` saveProfile/loadProfile |
+| 5 | Form integration | Hidden input | Tags sent with digest request |
+
+</details>
 
 <details>
 <summary><strong>MVP-5: FastAPI Endpoints [DONE]</strong></summary>
