@@ -2,7 +2,9 @@
 
 ## Overview
 
-A 12-factor application using FastAPI, HTMX, and LangGraph for AI-powered HackerNews digest generation.
+A 12-factor application using FastAPI, LangGraph, and SSE streaming for AI-powered HackerNews digest generation.
+
+> **Note**: See [Architecture Decision Records (ADRs)](adr/README.md) for detailed rationale behind key architectural decisions.
 
 ---
 
@@ -31,13 +33,13 @@ A 12-factor application using FastAPI, HTMX, and LangGraph for AI-powered Hacker
 graph TB
     subgraph Browser["CLIENT (Browser)"]
         LocalS[localStorage<br/>profile]
-        HTMX[HTMX<br/>partials]
+        SSE[SSE + Vanilla JS<br/>streaming]
         TW[Tailwind CSS<br/>mobile-first]
     end
 
     subgraph FastAPI["FASTAPI APPLICATION"]
         Routes[Routes<br/>Jinja2]
-        Templates[Templates<br/>HTMX]
+        Templates[Templates<br/>HTML]
         Tasks[Background Tasks<br/>async]
         Cache[(SQLite Cache)]
 
@@ -50,7 +52,7 @@ graph TB
             Rank --> Format[Format<br/>Digest Assembly]
         end
 
-        Callbacks[Progress<br/>Callbacks] -.-> HTMX
+        Callbacks[Progress<br/>SSE Events] -.-> SSE
     end
 
     subgraph External["EXTERNAL SERVICES"]
@@ -59,13 +61,15 @@ graph TB
         LangSmith[LangSmith<br/>Observability]
     end
 
-    Browser -->|HTTP/HTMX| FastAPI
+    Browser -->|HTTP/SSE| FastAPI
     Fetch --> HN
     Summarize --> Claude
     Summarize -.-> Cache
     Score --> Claude
     Pipeline -.->|traces| LangSmith
 ```
+
+> **Architecture Decision**: SSE streaming was chosen over HTMX partial swaps for real-time pipeline progress updates. See [ADR-002: SSE Streaming over HTMX](adr/002-sse-streaming-over-htmx.md).
 
 ### Component Interaction Flow
 
@@ -77,8 +81,14 @@ sequenceDiagram
     participant HN as HN API
     participant C as Claude API
 
-    B->>F: POST /generate (HTMX)
+    B->>F: POST /api/v1/digest/stream
+    F->>B: SSE stream start
     F->>G: invoke(profile)
+
+    loop Pipeline Stages (SSE updates)
+        F-->>B: {"stage": "...", "message": "..."}
+    end
+
     G->>HN: Fetch top stories
     HN-->>G: Story list
 
@@ -95,7 +105,7 @@ sequenceDiagram
     G->>G: Rank & limit
     G->>G: Format digest with stats
     G-->>F: Digest (Pydantic model)
-    F-->>B: HTML partial (HTMX swap)
+    F-->>B: {"stage": "complete", "digest": {...}}
 ```
 
 ---
@@ -223,11 +233,14 @@ hn-herald/
 
 ### Frontend
 
-| Component     | Technology       | Purpose              |
-| ------------- | ---------------- | -------------------- |
-| Interactivity | HTMX 2.0         | Partial page updates |
-| Styling       | Tailwind CSS 3.4 | Utility-first CSS    |
-| Icons         | Heroicons        | SVG icons            |
+| Component     | Technology             | Purpose                    |
+| ------------- | ---------------------- | -------------------------- |
+| Streaming     | SSE + Vanilla JS       | Real-time pipeline updates |
+| Styling       | Tailwind CSS 3.4       | Utility-first CSS          |
+| Icons         | Heroicons              | SVG icons                  |
+| HTMX          | HTMX 2.0 (loaded)      | Vestigial (see ADR-002)    |
+
+> **Note**: HTMX is loaded but minimally used. The app pivoted to SSE streaming for real-time pipeline progress. See [ADR-002](adr/002-sse-streaming-over-htmx.md).
 
 ### Infrastructure
 
@@ -1144,6 +1157,22 @@ make dev
 - [ ] HN_HERALD_ENV=production
 - [ ] Logging configured
 - [ ] Health checks working
+
+---
+
+## Architecture Decision Records
+
+Key architectural decisions are documented as ADRs in the [docs/adr/](adr/) directory:
+
+| ADR | Decision | Status |
+|-----|----------|--------|
+| [ADR-001](adr/001-langgraph-pipeline-architecture.md) | LangGraph StateGraph for pipeline orchestration | Accepted |
+| [ADR-002](adr/002-sse-streaming-over-htmx.md) | SSE streaming over HTMX partial swaps | Accepted |
+| [ADR-003](adr/003-privacy-first-architecture.md) | localStorage-only user data (no server storage) | Accepted |
+| [ADR-004](adr/004-tag-based-relevance-scoring.md) | Tag-matching over embedding-based similarity | Accepted |
+| [ADR-005](adr/005-claude-haiku-for-summarization.md) | Claude 3.5 Haiku for cost-efficient summarization | Accepted |
+
+See [ADR Index](adr/README.md) for full details and rationale.
 
 ---
 
