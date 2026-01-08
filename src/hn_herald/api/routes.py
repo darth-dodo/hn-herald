@@ -25,6 +25,7 @@ from hn_herald.graph.graph import create_hn_graph
 from hn_herald.models.digest import Digest
 from hn_herald.models.profile import UserProfile  # noqa: TC001
 from hn_herald.models.scoring import ScoredArticle  # noqa: TC001
+from hn_herald.rate_limit import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +209,10 @@ def _scored_article_to_response(article: ScoredArticle) -> DigestArticleResponse
             "model": ErrorResponse,
             "description": "Invalid request - validation error",
         },
+        429: {
+            "model": ErrorResponse,
+            "description": "Too many requests - rate limit exceeded",
+        },
         500: {
             "model": ErrorResponse,
             "description": "Internal server error - pipeline failure",
@@ -218,6 +223,7 @@ def _scored_article_to_response(article: ScoredArticle) -> DigestArticleResponse
         },
     },
 )
+@rate_limit
 async def generate_digest(request: GenerateDigestRequest) -> GenerateDigestResponse:
     """Generate personalized HN digest using LangGraph pipeline.
 
@@ -358,7 +364,16 @@ async def health_check() -> dict[str, Any]:
     }
 
 
-@router.post("/digest/stream")
+@router.post(
+    "/digest/stream",
+    responses={
+        429: {
+            "model": ErrorResponse,
+            "description": "Too many requests - rate limit exceeded",
+        },
+    },
+)
+@rate_limit
 async def generate_digest_stream(request: GenerateDigestRequest) -> StreamingResponse:
     """Generate digest with Server-Sent Events for real-time progress.
 
