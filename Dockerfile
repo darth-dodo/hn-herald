@@ -35,13 +35,8 @@ COPY src/ src/
 # Using --system to install into the container's Python environment
 RUN uv pip install --system .
 
-# Copy and set up startup script
-COPY start.sh .
-RUN chmod +x start.sh
-
 # Expose the application port
 EXPOSE 8000
 
-# Run the FastAPI application via startup script
-# Railway sets PORT env var; script defaults to 8000 if not set
-CMD ["./start.sh"]
+# Default command for local Docker runs (Railway overrides via startCommand)
+CMD ["uvicorn", "hn_herald.main:app", "--host", "0.0.0.0", "--port", "8000"]

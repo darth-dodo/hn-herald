@@ -20,6 +20,9 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
+# Start command - Railway runs this through shell, properly expanding $PORT
+startCommand = "uvicorn hn_herald.main:app --host 0.0.0.0 --port $PORT"
+
 # Health check configuration
 healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 300
