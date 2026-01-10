@@ -6,6 +6,10 @@
 # Build:   docker build -t hn-herald .
 # Run:     docker run -p 8000:8000 --env-file .env hn-herald
 #
+# Railway Deployment:
+#   Railway automatically builds and deploys using this Dockerfile.
+#   Set ANTHROPIC_API_KEY in the Railway dashboard.
+#
 # Required environment variables:
 #   - ANTHROPIC_API_KEY: API key for Claude LLM access
 #
@@ -36,5 +40,5 @@ EXPOSE 8000
 
 # Run the FastAPI application with uvicorn
 # --host 0.0.0.0 allows connections from outside the container
-# PORT environment variable support for Render compatibility (defaults to 8000)
+# PORT environment variable is automatically set by Railway (defaults to 8000 locally)
 CMD ["sh", "-c", "uvicorn hn_herald.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

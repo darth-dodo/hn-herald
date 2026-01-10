@@ -1,0 +1,32 @@
+# =============================================================================
+# Railway Configuration for HN Herald FastAPI Application
+# =============================================================================
+# Documentation: https://docs.railway.app/reference/config-as-code
+#
+# Deployment Instructions:
+# 1. Connect your GitHub repository to Railway (railway.app)
+# 2. Create a new project and link it to this repository
+# 3. Set the required environment variables in Railway dashboard:
+#    - ANTHROPIC_API_KEY: Your Anthropic API key for LLM summarization
+# 4. Deploy!
+#
+# CLI Deployment:
+#   railway up
+# =============================================================================
+
+[build]
+# Use Dockerfile for building
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Health check configuration
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+
+# Restart policy on failure
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# Number of instances (single instance for free tier)
+numReplicas = 1

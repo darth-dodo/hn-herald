@@ -22,7 +22,7 @@ This crash course documents everything about **HN Herald** — a privacy-first A
 │  LLM: Anthropic Claude 3.5 Haiku (batch summarization)         │
 │  Config: Environment-based Pydantic Settings                    │
 │  Data: HN Firebase API + 86 blocked domains                     │
-│  Deployment: Docker + Render.com                                │
+│  Deployment: Docker + Railway                                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -993,7 +993,7 @@ flowchart LR
     subgraph Deploy
         BUILD[make docker-build]
         PUSH[git push origin main]
-        RENDER[Render auto-deploy]
+        RAILWAY[Railway auto-deploy]
     end
 
     INSTALL --> DOTENV --> CSS --> DEV
@@ -1001,7 +1001,7 @@ flowchart LR
     CSS_WATCH -.-> DEV
 
     TEST_DEV --> LINT --> FORMAT --> TYPE --> TEST
-    TEST --> BUILD --> PUSH --> RENDER
+    TEST --> BUILD --> PUSH --> RAILWAY
 ```
 
 ---
@@ -1120,25 +1120,25 @@ EXPOSE 8000
 CMD ["uv", "run", "uvicorn", "hn_herald.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-### Render.com
+### Railway
 
-```yaml
-# render.yaml
-services:
-  - type: web
-    name: hn-herald
-    runtime: python
-    plan: free
-    region: oregon
-    buildCommand: pip install uv && uv sync --frozen --no-dev
-    startCommand: uv run uvicorn hn_herald.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /api/health
-    envVars:
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: HN_HERALD_ENV
-        value: production
+```toml
+# railway.toml
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+numReplicas = 1
 ```
+
+**Environment Variables** (set in Railway dashboard):
+- `ANTHROPIC_API_KEY`: Your Anthropic API key
+- `HN_HERALD_ENV`: `production`
 
 ### Deployment Flow
 
@@ -1155,14 +1155,14 @@ flowchart LR
         IMAGE[Docker Image]
     end
 
-    subgraph Render["Render.com"]
-        YAML[render.yaml]
+    subgraph Railway["Railway"]
+        TOML[railway.toml]
         WEB[Web Service]
         HEALTH[/api/health]
     end
 
-    CODE --> GIT -->|push main| YAML
-    YAML --> WEB
+    CODE --> GIT -->|push main| TOML
+    TOML --> WEB
     DOCKER --> IMAGE
     UV --> IMAGE
     WEB --> HEALTH
