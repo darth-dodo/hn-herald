@@ -42,21 +42,18 @@ The Article Extraction service is responsible for fetching and processing articl
 
 ### Problematic Domains
 
-These domains are skipped due to technical or content issues:
+These domains are skipped due to technical or content issues (24 total):
 
-| Domain | Reason |
-|--------|--------|
-| `twitter.com`, `x.com` | Requires JavaScript, rate-limited |
-| `reddit.com` | Heavy JavaScript, rate-limited |
-| `youtube.com`, `youtu.be` | Video content, not extractable |
-| `github.com` | Often code/binary, complex structure |
-| `*.pdf` (file extension) | Binary format, requires special handling |
-| `docs.google.com` | Authentication required |
-| `medium.com` | Paywall detection issues |
-| `bloomberg.com` | Heavy paywall |
-| `wsj.com` | Heavy paywall |
-| `nytimes.com` | Paywall |
-| `linkedin.com` | Requires authentication |
+| Category | Domains | Reason |
+|----------|---------|--------|
+| Social Media | `twitter.com`, `x.com`, `reddit.com`, `old.reddit.com`, `facebook.com`, `instagram.com` | Requires JavaScript, rate-limited |
+| Video Platforms | `youtube.com`, `youtu.be`, `vimeo.com`, `tiktok.com` | Video content, not extractable |
+| Code Hosting | `github.com`, `gitlab.com`, `bitbucket.org` | Often code/binary, complex structure |
+| Google Services | `docs.google.com`, `drive.google.com`, `sheets.google.com` | Authentication required |
+| Paywalled Sites | `medium.com`, `bloomberg.com`, `wsj.com`, `nytimes.com`, `ft.com`, `economist.com`, `washingtonpost.com` | Paywall detection issues |
+| Professional Networks | `linkedin.com` | Requires authentication |
+
+File extensions skipped (24 total): `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.zip`, `.tar`, `.gz`, `.rar`, `.7z`, `.mp4`, `.mp3`, `.wav`, `.avi`, `.mov`, `.mkv`, `.webm`, `.jpg`, `.jpeg`, `.png`, `.gif`, `.svg`, `.webp`, `.bmp`, `.ico`
 
 ### Paywall Detection
 
@@ -272,40 +269,54 @@ class ArticleLoader:
             articles = await loader.extract_articles(stories)
     """
 
-    # Domains that are skipped
+    # Domains that should be skipped (problematic for extraction)
     BLOCKED_DOMAINS: ClassVar[set[str]] = {
+        # Social media (requires JS, rate-limited)
         "twitter.com", "x.com",
         "reddit.com", "old.reddit.com",
+        "facebook.com", "instagram.com",
+        # Video platforms (no text content)
         "youtube.com", "youtu.be",
-        "github.com",
-        "docs.google.com",
+        "vimeo.com", "tiktok.com",
+        # Code hosting (complex structure, often binary)
+        "github.com", "gitlab.com", "bitbucket.org",
+        # Google services (auth required)
+        "docs.google.com", "drive.google.com", "sheets.google.com",
+        # Paywalled sites
         "medium.com",
         "bloomberg.com", "wsj.com", "nytimes.com",
+        "ft.com", "economist.com", "washingtonpost.com",
+        # Professional networks (auth required)
         "linkedin.com",
     }
 
-    # File extensions that are skipped
+    # File extensions that should be skipped
     BLOCKED_EXTENSIONS: ClassVar[set[str]] = {
+        # Documents
         ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-        ".zip", ".tar", ".gz", ".rar",
-        ".mp4", ".mp3", ".wav", ".avi", ".mov",
-        ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp",
+        # Archives
+        ".zip", ".tar", ".gz", ".rar", ".7z",
+        # Media
+        ".mp4", ".mp3", ".wav", ".avi", ".mov", ".mkv", ".webm",
+        # Images
+        ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".bmp", ".ico",
     }
 
     def __init__(
         self,
-        timeout: int = 15,
+        timeout: int | None = None,
         max_retries: int = 3,
         max_concurrent: int = 10,
-        max_content_length: int = 8000,
+        max_content_length: int | None = None,
     ) -> None:
         """Initialize article loader.
 
         Args:
-            timeout: Request timeout in seconds
+            timeout: Request timeout in seconds. Defaults to settings value.
             max_retries: Maximum retry attempts
             max_concurrent: Maximum concurrent requests
-            max_content_length: Maximum content length in characters
+            max_content_length: Maximum content length in characters.
+                               Defaults to settings value.
         """
         ...
 

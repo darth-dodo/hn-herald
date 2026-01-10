@@ -21,7 +21,7 @@ This crash course documents everything about **HN Herald** — a privacy-first A
 │  AI System: LangGraph with 7 nodes, parallel extraction         │
 │  LLM: Anthropic Claude 3.5 Haiku (batch summarization)         │
 │  Config: Environment-based Pydantic Settings                    │
-│  Data: HN Firebase API + 86 blocked domains                     │
+│  Data: HN Firebase API + 24 blocked domains                     │
 │  Deployment: Docker + Render.com                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -32,7 +32,7 @@ This crash course documents everything about **HN Herald** — a privacy-first A
 - ✅ Send pattern for concurrent HTTP requests (10 max)
 - ✅ Batch LLM summarization (5 articles/call, 80% cost reduction)
 - ✅ Tag-based relevance scoring (70% relevance + 30% popularity)
-- ✅ SQLite LLM cache with 24h TTL
+- ⚠️ LLM caching: Not implemented (config exists but unused)
 - ✅ SSE streaming for real-time progress updates
 - ✅ Privacy-first: no tracking, localStorage only
 - ✅ 469 tests with 70%+ coverage, strict typing
@@ -144,7 +144,7 @@ flowchart LR
 | Pipeline Framework | LangGraph | StateGraph with Send pattern for parallelization |
 | LLM Strategy | Haiku + Batch | Fast, cost-effective (5 articles/call) |
 | Config System | Pydantic Settings | Environment-based, validated |
-| Caching | SQLite | 24h TTL, survives restarts |
+| Caching | Not implemented | Config exists but LLMService does not use it |
 | Frontend | Vanilla JS + Jinja2 | No build step, server-driven |
 | Streaming | SSE | Real-time progress without WebSockets |
 
@@ -434,7 +434,7 @@ flowchart TB
 
     subgraph ArticleLoader["ArticleLoader Service"]
         AL_EXTRACT[extract_article]
-        AL_FILTER[Domain Filter<br/>86 blocked]
+        AL_FILTER[Domain Filter<br/>24 blocked]
         AL_PARSE[HTML Parser<br/>BeautifulSoup]
         AL_TRUNCATE[Truncate<br/>50KB max]
     end
@@ -442,7 +442,6 @@ flowchart TB
     subgraph LLMService["LLMService"]
         LLM_BATCH[Batch Summary<br/>5 articles/call]
         LLM_CLAUDE[Claude 3.5 Haiku]
-        LLM_CACHE[SQLite Cache<br/>24h TTL]
         LLM_PARSE[Pydantic Parser]
     end
 
@@ -458,8 +457,7 @@ flowchart TB
     Websites[(Websites)] --> AL_EXTRACT
     AL_EXTRACT --> AL_FILTER --> AL_PARSE --> AL_TRUNCATE
 
-    LLM_BATCH --> LLM_CACHE
-    LLM_CACHE -->|miss| LLM_CLAUDE
+    LLM_BATCH --> LLM_CLAUDE
     LLM_CLAUDE --> LLM_PARSE
 
     SC_REL --> SC_FINAL
@@ -789,28 +787,6 @@ function generateDigest(profile) {
 }
 ```
 
-### Cancel Button (AbortController)
-
-Users can cancel in-progress digest generation using the Cancel button. The implementation uses the browser's AbortController API for graceful stream termination:
-
-```javascript
-// Global abort controller for canceling digest generation
-let currentAbortController = null;
-
-function abortDigest() {
-    if (currentAbortController) {
-        currentAbortController.abort();
-        currentAbortController = null;
-    }
-    // Reset UI state...
-}
-```
-
-**Benefits**:
-- Graceful abort without error messages
-- Proper cleanup of intervals and controllers
-- Immediate UI reset to ready state
-
 ---
 
 ## 10. Configuration
@@ -860,9 +836,9 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.0
     llm_max_tokens: int = 8192
 
-    # Cache
-    llm_cache_type: str = "sqlite"  # sqlite | memory | none
-    llm_cache_ttl: int = 86400  # 24 hours
+    # Cache (config exists but not implemented in LLMService)
+    # llm_cache_type: str = "sqlite"  # Not used
+    # llm_cache_ttl: int = 86400  # Not used
 
     # Performance
     max_concurrent_fetches: int = 10
@@ -880,7 +856,7 @@ class Settings(BaseSettings):
 | `ANTHROPIC_API_KEY` | *required* | Claude API key |
 | `HN_HERALD_ENV` | development | Environment mode |
 | `HN_HERALD_LLM_MODEL` | claude-3-5-haiku-20241022 | LLM model |
-| `HN_HERALD_LLM_CACHE_TYPE` | sqlite | Cache backend |
+| `HN_HERALD_LLM_CACHE_TYPE` | sqlite | Cache backend (not implemented) |
 | `HN_HERALD_MAX_CONCURRENT_FETCHES` | 10 | Parallel requests |
 | `HN_HERALD_SUMMARY_BATCH_SIZE` | 5 | Articles per LLM call |
 
@@ -1256,7 +1232,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 # Optional (with defaults)
 HN_HERALD_ENV=development
 HN_HERALD_LLM_MODEL=claude-3-5-haiku-20241022
-HN_HERALD_LLM_CACHE_TYPE=sqlite
+# HN_HERALD_LLM_CACHE_TYPE=sqlite  # Config exists but caching not implemented
 HN_HERALD_MAX_CONCURRENT_FETCHES=10
 HN_HERALD_SUMMARY_BATCH_SIZE=5
 ```
@@ -1401,15 +1377,12 @@ result = await fetch_hn(state)
 print(f"Fetched {len(result['stories'])} stories")
 ```
 
-#### 4. Check Cache Status
+#### 4. Check Service Status
 
 ```bash
-# SQLite cache inspection
-sqlite3 .cache/llm_cache.db "SELECT COUNT(*) FROM cache;"
-sqlite3 .cache/llm_cache.db "SELECT key, created_at FROM cache LIMIT 5;"
-
-# Clear cache if corrupted
-rm -rf .cache/llm_cache.db
+# Note: LLM caching is not implemented despite config settings
+# The LLMService class does not use any caching mechanism
+# Each LLM call goes directly to the Anthropic API
 ```
 
 ### FAQ
@@ -1421,7 +1394,7 @@ rm -rf .cache/llm_cache.db
 > A: Edit `src/hn_herald/services/loader.py` and add the domain to `BLOCKED_DOMAINS`.
 
 **Q: Why is the digest taking so long?**
-> A: The LLM summarization is the bottleneck (~15-30s). Enable caching to speed up repeated requests.
+> A: The LLM summarization is the bottleneck (~15-30s). Note: Caching is not currently implemented, so each request makes fresh API calls.
 
 **Q: Can I use a different LLM model?**
 > A: Yes, set `HN_HERALD_LLM_MODEL` to any Claude model (e.g., `claude-3-opus-20240229`).
@@ -1676,22 +1649,17 @@ class LLMService:
         return input_cost + output_cost
 ```
 
-### Cache Hit Rate Monitoring
+### Caching Status
 
 ```python
-# Add to LLMService
-class CacheStats:
-    hits: int = 0
-    misses: int = 0
-
-    @property
-    def hit_rate(self) -> float:
-        total = self.hits + self.misses
-        return self.hits / total if total > 0 else 0.0
-
-# Log cache stats
-logger.info(f"Cache hit rate: {cache_stats.hit_rate:.1%}")
-logger.info(f"Estimated savings: ${cache_stats.hits * 0.001:.3f}")
+# Note: LLM caching is NOT currently implemented
+# The config.py has cache settings (llm_cache_type, llm_cache_ttl)
+# but LLMService does not use them
+#
+# To implement caching, you would need to:
+# 1. Add a caching layer to LLMService.summarize_batch()
+# 2. Use content hashing as cache keys
+# 3. Implement TTL-based expiration
 ```
 
 ### Cost Optimization Strategies
@@ -1700,9 +1668,8 @@ logger.info(f"Estimated savings: ${cache_stats.hits * 0.001:.3f}")
 mindmap
   root((Cost<br/>Optimization))
     Caching
-      SQLite 24h TTL
-      Memory cache for hot paths
-      Shared cache across users
+      Not implemented
+      Potential future optimization
     Batching
       5 articles per call
       Reduces overhead
@@ -1729,7 +1696,7 @@ mindmap
 ├─────────────────────────────────────────────────────────────────┤
 │ □ Environment variables set (ANTHROPIC_API_KEY)                 │
 │ □ HN_HERALD_ENV=production                                      │
-│ □ LLM cache configured (sqlite recommended)                     │
+│ □ Note: LLM caching not implemented (each request calls API)    │
 │ □ Health endpoint responding (/api/health)                      │
 │ □ SSL/TLS configured (HTTPS only)                              │
 │ □ Rate limiting enabled (if high traffic expected)             │
@@ -1825,34 +1792,31 @@ export HN_HERALD_MOCK_MODE=true
 #### Scenario: High Latency
 
 ```bash
-# 1. Check cache hit rate
-sqlite3 .cache/llm_cache.db "SELECT COUNT(*) FROM cache WHERE created_at > datetime('now', '-1 hour');"
+# Note: LLM caching is not implemented, so each request makes fresh API calls
 
-# 2. If cache empty, rebuild
-curl -X POST http://localhost:8000/api/v1/digest -d '{"profile": {...}, "mock": false}'
-
-# 3. Check concurrent requests
+# 1. Check concurrent requests
 netstat -an | grep :8000 | wc -l
 
-# 4. Scale horizontally if needed
+# 2. Scale horizontally if needed
 docker-compose up --scale web=3
+
+# 3. Consider implementing caching in LLMService for repeated requests
 ```
 
-#### Scenario: Database Corruption
+#### Scenario: Slow LLM Responses
 
 ```bash
-# 1. Backup corrupted database
-cp .cache/llm_cache.db .cache/llm_cache.db.corrupted
+# Note: No LLM cache exists to corrupt - caching is not implemented
+# Each request goes directly to the Anthropic API
 
-# 2. Check integrity
-sqlite3 .cache/llm_cache.db "PRAGMA integrity_check;"
+# 1. Check Anthropic API status
+curl https://status.anthropic.com/api/v2/status.json
 
-# 3. If corrupted, recreate
-rm .cache/llm_cache.db
-# Cache will be recreated on next request
+# 2. Reduce batch size if needed (increases API calls but reduces per-call latency)
+export HN_HERALD_SUMMARY_BATCH_SIZE=3
 
-# 4. Or restore from backup
-cp .cache/llm_cache.db.backup .cache/llm_cache.db
+# 3. Use mock mode for testing
+curl -X POST http://localhost:8000/api/v1/digest -d '{"profile": {...}, "mock": true}'
 ```
 
 ### Performance Baselines
@@ -1862,7 +1826,7 @@ cp .cache/llm_cache.db.backup .cache/llm_cache.db
 | Response time (p50) | <30s | 30-60s | >60s |
 | Response time (p99) | <90s | 90-120s | >120s |
 | Error rate | <1% | 1-5% | >5% |
-| Cache hit rate | >60% | 40-60% | <40% |
+| Cache hit rate | N/A | N/A | N/A (not implemented) |
 | Memory usage | <500MB | 500-800MB | >800MB |
 | LLM latency | <20s | 20-40s | >40s |
 
@@ -1916,24 +1880,24 @@ flowchart LR
 - ⚠️ Single failure affects 5 articles
 - ⚠️ Larger prompts increase token usage
 
-### ADR-003: SQLite for LLM Cache
+### ADR-003: LLM Caching Strategy
 
-**Status**: Accepted
+**Status**: Not Implemented
 
-**Context**: Need persistent caching to avoid redundant LLM calls.
+**Context**: Caching was planned to avoid redundant LLM calls and reduce costs.
 
-**Decision**: Use SQLite with 24-hour TTL.
+**Decision**: Configuration settings exist (`llm_cache_type`, `llm_cache_ttl`) but caching was never implemented in `LLMService`.
 
-**Alternatives Considered**:
-- Redis: Overkill for single-server deployment
-- File-based: No TTL support, manual cleanup
-- Memory-only: Lost on restart
+**Current State**:
+- Config has cache settings (sqlite type, 24h TTL)
+- `LLMService` class does not use these settings
+- Every request makes fresh API calls to Anthropic
 
-**Consequences**:
-- ✅ Zero additional infrastructure
-- ✅ Survives process restarts
-- ✅ Built-in TTL support
-- ⚠️ Not suitable for multi-server deployment
+**Future Implementation Notes**:
+- Would need to add caching layer to `LLMService.summarize_batch()`
+- Consider content hashing as cache keys
+- SQLite or Redis for persistence
+- TTL-based expiration for freshness
 
 ### ADR-004: Server-Side Rendering with Jinja2
 
@@ -1988,5 +1952,5 @@ flowchart LR
 
 ---
 
-*Crash Course v1.1 — HN Herald (469 tests, 70%+ coverage, LangGraph Pipeline)*
-*Enhanced with: Troubleshooting, Extension Guide, Cost Tracking, Operational Runbook, ADRs, Cancel Button, Rate Limiting*
+*Crash Course v1.0 — HN Herald (469 tests, 70%+ coverage, LangGraph Pipeline)*
+*Enhanced with: Troubleshooting, Extension Guide, Cost Tracking, Operational Runbook, ADRs*

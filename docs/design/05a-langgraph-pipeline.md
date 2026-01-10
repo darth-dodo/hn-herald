@@ -1,8 +1,9 @@
 # MVP-5a: LangGraph Orchestration Pipeline
 
-**Status**: Draft
+**Status**: Updated (aligned with implementation)
 **Author**: Claude (Architect persona)
 **Date**: 2026-01-04
+**Last Updated**: 2026-01-10
 **Dependencies**: MVP-1 (HNClient), MVP-2 (ArticleLoader), MVP-3 (LLMService), MVP-4 (ScoringService)
 
 ---
@@ -120,7 +121,8 @@ UserProfile
 ### 3.3 Parallelism Strategy
 
 **Send Pattern for Article Extraction**:
-- `fetch_hn` node returns `Send` objects for each story
+- `fetch_hn` node returns state updates (stories, start_time)
+- A conditional edge function (`continue_to_fetch_article`) creates `Send` objects for each story
 - LangGraph automatically parallelizes Send targets
 - Each article extraction is independent (no shared state)
 - Results are appended to `articles` list using `add` reducer
@@ -234,41 +236,40 @@ class HNState(TypedDict):
 
 **Implementation Pattern**:
 ```python
-async def fetch_hn(state: HNState) -> dict | list[Send]:
-    """Fetch HN stories and emit Send objects for parallel extraction."""
+async def fetch_hn(state: HNState) -> dict[str, Any]:
+    """Fetch HN stories for parallel article extraction.
+
+    This node fetches stories from the HackerNews API based on user preferences.
+    Parallel article extraction is handled by a conditional edge that creates
+    Send objects for each story.
+    """
     profile = state["profile"]
+    start_time = time.time()
 
     # Fetch stories from HN API
     async with HNClient() as client:
         stories = await client.fetch_stories(
             story_type=profile.fetch_type,
             limit=profile.fetch_count,
-            min_score=profile.min_score,
+            min_score=int(profile.min_score),
         )
 
     if not stories:
         return {
             "stories": [],
             "errors": ["No stories found from HN API"],
-            "start_time": time.time(),
+            "start_time": start_time,
         }
 
-    # Emit Send objects for parallel article extraction
-    sends = [
-        Send("fetch_article", {"story": story, "profile": profile})
-        for story in stories
-    ]
-
-    return [
-        Send("fetch_article", {"story": story, "profile": profile})
-        for story in stories
-    ] + [
-        {
-            "stories": stories,
-            "start_time": time.time(),
-        }
-    ]
+    # Return state updates
+    # Parallel article extraction is handled by conditional edge with Send pattern
+    return {
+        "stories": stories,
+        "start_time": start_time,
+    }
 ```
+
+**Note**: The Send pattern for parallel article extraction is implemented via a conditional edge function (`continue_to_fetch_article`) in `graph.py`, not by returning Send objects directly from this node. This separation of concerns keeps the node logic clean and focused on fetching stories.
 
 **Error Handling**:
 - HN API failures: Raise exception (critical path)
@@ -582,13 +583,39 @@ def format_digest(state: HNState) -> dict:
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Send
 
-def create_hn_graph() -> StateGraph:
-    """Create and compile the HN Herald digest generation graph.
+def continue_to_fetch_article(state: HNState) -> list[Any]:
+    """Conditional edge that returns Send objects for parallel article extraction.
+
+    This function creates Send objects for each story, enabling parallel
+    execution of the fetch_article node.
+
+    Args:
+        state: Current graph state with fetched stories.
 
     Returns:
-        Compiled StateGraph ready for invocation.
+        List of Send objects, one for each story.
     """
-    # Create graph
+    stories = state.get("stories", [])
+    profile = state["profile"]
+
+    return [Send("fetch_article", {"story": story, "profile": profile}) for story in stories]
+
+
+def create_hn_graph() -> CompiledStateGraph:
+    """Create and compile the HN Herald digest generation graph.
+
+    Assembles the StateGraph with all nodes and edges for the digest
+    generation pipeline. Enables parallel article extraction using the
+    Send pattern via conditional edges.
+
+    Graph structure:
+        START → fetch_hn → fetch_article (parallel via Send)
+                          → filter → summarize → score → rank → format → END
+
+    Returns:
+        Compiled StateGraph ready for invocation with ainvoke().
+    """
+    # Create graph with HNState schema
     graph = StateGraph(HNState)
 
     # Add nodes
@@ -601,9 +628,16 @@ def create_hn_graph() -> StateGraph:
     graph.add_node("format", format_digest)
 
     # Add edges
+    # START -> fetch_hn
     graph.add_edge(START, "fetch_hn")
-    # fetch_hn → fetch_article handled by Send pattern
+
+    # fetch_hn -> fetch_article via conditional edge (Send pattern for parallel execution)
+    graph.add_conditional_edges("fetch_hn", continue_to_fetch_article)
+
+    # fetch_article -> filter (all parallel extractions complete before filter)
     graph.add_edge("fetch_article", "filter")
+
+    # Linear pipeline after filtering
     graph.add_edge("filter", "summarize")
     graph.add_edge("summarize", "score")
     graph.add_edge("score", "rank")
@@ -846,16 +880,28 @@ src/hn_herald/graph/
 ```python
 # tests/unit/graph/nodes/test_fetch_hn.py
 async def test_fetch_hn_success(mock_hn_client, sample_profile):
-    """Test fetch_hn emits Send objects for parallel extraction."""
+    """Test fetch_hn returns stories and start_time."""
     state = {"profile": sample_profile}
 
     with patch("hn_herald.graph.nodes.fetch_hn.HNClient", mock_hn_client):
         result = await fetch_hn(state)
 
-    # Check Send objects emitted
-    assert len(result) == 31  # 30 Send + 1 state update
-    assert all(isinstance(r, Send) for r in result[:30])
-    assert result[-1]["stories"] == mock_stories
+    # fetch_hn returns state dict, Send pattern is handled by conditional edge
+    assert "stories" in result
+    assert "start_time" in result
+    assert result["stories"] == mock_stories
+
+
+# tests/unit/graph/test_graph.py
+def test_continue_to_fetch_article_creates_sends(sample_profile, mock_stories):
+    """Test conditional edge function creates Send objects."""
+    state = {"profile": sample_profile, "stories": mock_stories}
+
+    sends = continue_to_fetch_article(state)
+
+    assert len(sends) == len(mock_stories)
+    assert all(isinstance(s, Send) for s in sends)
+    assert all(s.node == "fetch_article" for s in sends)
 
 
 # tests/unit/graph/nodes/test_filter.py

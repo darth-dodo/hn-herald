@@ -41,7 +41,6 @@ graph TB
         Routes[Routes<br/>Jinja2]
         Templates[Templates<br/>HTML]
         Tasks[Background Tasks<br/>async]
-        Cache[(SQLite Cache)]
 
         subgraph Pipeline["LANGGRAPH PIPELINE"]
             FetchHN[Fetch HN<br/>Stories] --> FetchArticle[Extract Articles<br/>Parallel via Send]
@@ -64,7 +63,6 @@ graph TB
     Browser -->|HTTP/SSE| FastAPI
     Fetch --> HN
     Summarize --> Claude
-    Summarize -.-> Cache
     Score --> Claude
     Pipeline -.->|traces| LangSmith
 ```
@@ -169,8 +167,7 @@ hn-herald/
 │       │   ├── hn_client.py         # HackerNews API client ✅
 │       │   ├── loader.py            # ArticleLoader service ✅
 │       │   ├── llm.py               # LLM summarization service ✅
-│       │   ├── scoring.py           # Relevance scoring service ✅
-│       │   └── cache.py             # LangChain caching setup
+│       │   └── scoring.py           # Relevance scoring service ✅
 │       │
 │       ├── callbacks/
 │       │   ├── __init__.py
@@ -225,7 +222,7 @@ hn-herald/
 | LLM Interface   | LangChain-Anthropic       | Claude integration               |
 | Model           | Claude 3.5 Haiku          | Summarization (cost-efficient)   |
 | Observability   | LangSmith                 | Tracing, debugging, monitoring   |
-| Caching         | LangChain Cache           | Response caching for performance |
+| Caching         | Not implemented           | Future enhancement opportunity   |
 | Output Parsing  | PydanticOutputParser      | Structured JSON from LLM         |
 | Callbacks       | LangChain Callbacks       | Progress streaming to frontend   |
 | Document Loading| WebBaseLoader             | Article content extraction       |
@@ -279,10 +276,9 @@ erDiagram
     UserProfile {
         list interest_tags
         list disinterest_tags
-        list custom_tags
-        int min_score
+        float min_score
         int max_articles
-        string fetch_type
+        StoryType fetch_type
         int fetch_count
     }
 
@@ -416,7 +412,7 @@ class ScoredArticle(BaseModel):
 ```python
 class Digest(BaseModel):
     articles: list[ScoredArticle]      # Ranked and limited
-    generated_at: datetime             # ISO 8601 timestamp
+    timestamp: datetime                # ISO 8601 timestamp
     stats: DigestStats                 # Pipeline statistics
 
 class DigestStats(BaseModel):
@@ -721,26 +717,6 @@ class ScoringService:
 - Uses `UserProfile` for interest/disinterest tags
 - Returns `ScoredArticle` with relevance breakdown and final score
 
-### Caching
-
-Reduce API costs and latency with intelligent caching.
-
-```python
-from langchain.cache import SQLiteCache, InMemoryCache
-from langchain.globals import set_llm_cache
-
-# In-memory for development (fast, session-scoped)
-set_llm_cache(InMemoryCache())
-
-# SQLite for production (persistent across restarts)
-set_llm_cache(SQLiteCache(database_path=".cache/llm_cache.db"))
-```
-
-**Cache Strategy**:
-- Cache summaries by article URL hash
-- Cache relevance scores by (article_hash, profile_hash)
-- TTL: 24 hours for summaries, 1 hour for scores
-
 ### Output Parsers
 
 Structured, validated output from LLM responses. The summarization system uses Pydantic models with LangChain-Anthropic integration for type-safe batch processing.
@@ -898,7 +874,6 @@ graph TB
         LS[LangSmith]
 
         subgraph "Components"
-            Cache[SQLite Cache]
             Parser[Pydantic Parser]
             Callback[HTMX Callbacks]
             Loader[WebBaseLoader]
@@ -917,7 +892,6 @@ graph TB
     LG --> LA
     LA --> LLM
 
-    Graph --> Cache
     Graph --> Parser
     Graph --> Callback
     Graph --> Loader
@@ -927,7 +901,6 @@ graph TB
     LA -.-> LS
 
     style LS fill:#f9f,stroke:#333
-    style Cache fill:#bbf,stroke:#333
     style Parser fill:#bfb,stroke:#333
 ```
 
@@ -938,10 +911,6 @@ graph TB
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=ls-...
 LANGCHAIN_PROJECT=hn-herald
-
-# Caching
-LLM_CACHE_TYPE=sqlite           # sqlite|memory|none
-LLM_CACHE_TTL=86400             # 24 hours in seconds
 
 # Document Loading
 LOADER_TIMEOUT=15               # Seconds
@@ -1068,7 +1037,7 @@ class Settings(BaseSettings):
 1. **Article fetch fails** → Mark as unavailable, continue with others
 2. **LLM fails** → Return article without summary, note error
 3. **All articles fail** → Show error message with retry option
-4. **HN API down** → Show cached results if available, error message
+4. **HN API down** → Show error message with retry option
 
 ### Retry Strategy
 

@@ -42,6 +42,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logger.info(f"Cache Type: {settings.llm_cache_type}")
 
     # Create cache directory if using SQLite cache
+    # NOTE: Directory is created but LLMService does not implement caching yet
     if settings.llm_cache_type == "sqlite":
         cache_dir = Path(settings.cache_dir)
         cache_dir.mkdir(parents=True, exist_ok=True)

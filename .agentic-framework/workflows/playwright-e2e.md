@@ -40,7 +40,7 @@ End-to-end testing workflow using Playwright MCP for browser automation. This do
 
 ```bash
 # Start test server on dedicated port
-uv run uvicorn src.api.main:app --host 127.0.0.1 --port 8765
+uv run uvicorn hn_herald.main:app --host 127.0.0.1 --port 8765
 
 # Verify server is running
 curl http://127.0.0.1:8765/health
@@ -376,7 +376,7 @@ jobs:
 
       - name: Start server
         run: |
-          uv run uvicorn src.api.main:app --port 8765 &
+          uv run uvicorn hn_herald.main:app --port 8765 &
           sleep 5
 
       - name: Run E2E tests
@@ -399,7 +399,7 @@ For critical paths, run smoke tests pre-commit:
 # .git/hooks/pre-push
 
 # Start server in background
-uv run uvicorn src.api.main:app --port 8765 &
+uv run uvicorn hn_herald.main:app --port 8765 &
 SERVER_PID=$!
 sleep 3
 

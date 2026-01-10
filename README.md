@@ -1,23 +1,61 @@
+<div align="center">
+
 # HN Herald
 
-**Your personalized, privacy-first HackerNews digest with AI-powered summaries.**
+**AI-Powered, Privacy-First HackerNews Digest**
 
-Stop drowning in links. Get the stories that matter to you, summarized and scored for relevance.
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-0.2+-purple.svg)](https://github.com/langchain-ai/langgraph)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+*Stop drowning in links. Get the stories that matter to you, summarized and scored for relevance.*
+
+[Features](#features) • [Demo](#demo) • [Quick Start](#quick-start) • [Architecture](#architecture) • [Documentation](#documentation)
+
+</div>
+
+---
 
 ![HN Herald - Configure your digest](docs/screenshots/01-configure-digest.png)
 
-## Screenshots
+## Features
+
+### Personalized Content Discovery
+- **Tag-Based Interests** — Select from curated categories (AI/ML, Web Dev, Security, etc.) or create custom tags
+- **Smart Scoring** — Hybrid algorithm: 70% relevance to your interests + 30% HN community signals
+- **Disinterest Filtering** — Actively exclude topics you don't want to see
+
+### AI-Powered Summaries
+- **Concise Summaries** — 2-3 sentence overview of each article
+- **Key Points** — 3-5 actionable takeaways extracted from content
+- **Auto-Tagging** — Technology tags identified from article content
+- **Batch Processing** — Efficient LLM calls (5 articles per request) for cost optimization
+
+### Privacy-First Design
+- **Zero Tracking** — No analytics, no cookies, no behavior logging
+- **Local Storage Only** — Your preferences never leave your browser
+- **No Account Required** — Start using immediately
+- **Ephemeral Processing** — Content processed in real-time, never stored
+
+### Real-Time Experience
+- **SSE Streaming** — Live pipeline progress updates as your digest generates
+- **Cancellable Requests** — Abort long-running operations anytime
+- **Fun Facts** — HN trivia while you wait
+- **Three Themes** — HN Orange, Ocean Blue, Dark Mode
+
+## Demo
 
 <details>
-<summary>Click to see more screenshots</summary>
+<summary><b>Screenshots</b></summary>
 
-### Loading State with Real-time Progress
-![Loading state with fun facts](docs/screenshots/02-loading-state.png)
+### Real-Time Loading Progress
+![Loading state with pipeline stages](docs/screenshots/02-loading-state.png)
 
-### Mobile View
+### Mobile Experience
 ![Mobile responsive design](docs/screenshots/04-mobile-digest.png)
 
-### Dark Theme (Mobile)
+### Dark Theme
 ![Dark theme on mobile](docs/screenshots/05-mobile-dark-theme.png)
 
 ### Ocean Theme
@@ -25,164 +63,171 @@ Stop drowning in links. Get the stories that matter to you, summarized and score
 
 </details>
 
-## Why HN Herald?
-
-HackerNews is a firehose of great content, but finding what matters to *you* takes time. HN Herald solves this by:
-
-- **Understanding your interests** through simple tag selection (no account required)
-- **Summarizing articles** with AI-generated key points and insights
-- **Scoring relevance** based on your profile + community engagement
-- **Respecting your privacy** with zero tracking and local-only storage
-
-## Key Features
-
-### Tag-Based Personalization
-Select from predefined interest tags or create custom ones:
-- **Tech Domains**: AI/ML, Web Development, DevOps, Security, Mobile
-- **Topics**: Startups, Career, Open Source, Hardware, Science
-- **Languages**: Python, JavaScript, Rust, Go, and more
-
-Your preferences stay in your browser - we never see them.
-
-### AI-Powered Summaries
-Each article gets:
-- A concise 2-3 sentence summary
-- 3-5 key points extracted from the content
-- Relevance explanation tailored to your interests
-
-Powered by Claude 3.5 Haiku with efficient batch processing (5 articles per LLM call).
-
-### Smart Ranking
-Stories are ranked using a hybrid score:
-- **70%** relevance to your selected tags
-- **30%** HackerNews community signals (points, comments)
-
-### Mobile-First Design
-Built for on-the-go reading with:
-- Fast, responsive interface
-- Touch-friendly interactions
-- Three beautiful themes (HN Orange, Ocean, Dark)
-- Real-time loading indicators with pipeline stage updates
-- HN fun facts while you wait
-- Cancel button to abort long-running requests
-
 ## Quick Start
 
+### Prerequisites
+- Python 3.12+
+- [uv](https://github.com/astral-sh/uv) package manager
+- Anthropic API key
+
+### Installation
+
 ```bash
-# Clone and install
-git clone https://github.com/darth-dodo/ai-adventures.git
-cd ai-adventures/hn-herald
+# Clone the repository
+git clone https://github.com/darth-dodo/hn-herald.git
+cd hn-herald
+
+# Install dependencies
 make install
 
-# Set your Anthropic API key
+# Configure environment
 cp .env.example .env
-# Edit .env and add your ANTHROPIC_API_KEY
+# Add your ANTHROPIC_API_KEY to .env
 
-# Run the development server
+# Start the server
 make dev
 ```
 
-Open [http://localhost:8000](http://localhost:8000) and start reading.
+Open [http://localhost:8000](http://localhost:8000) and generate your first digest.
 
-## How It Works
+## Architecture
 
+### System Overview
+
+```mermaid
+graph TB
+    subgraph Browser["Browser"]
+        UI[Vanilla JS + Tailwind]
+        LS[(localStorage)]
+    end
+
+    subgraph FastAPI["FastAPI Backend"]
+        Routes[API Routes]
+        Pipeline[LangGraph Pipeline]
+    end
+
+    subgraph External["External Services"]
+        HN[HN Firebase API]
+        Claude[Anthropic Claude]
+    end
+
+    UI <-->|SSE Stream| Routes
+    UI --> LS
+    Routes --> Pipeline
+    Pipeline --> HN
+    Pipeline --> Claude
 ```
-HackerNews API --> LangGraph Pipeline --> Your Browser
-                         |
-                         v
-    ┌─────────────────────────────────────────┐
-    │  1. Fetch Stories (HN API)              │
-    │  2. Extract Articles (Parallel)         │
-    │  3. Filter Content                      │
-    │  4. Summarize (Claude AI Batch)         │
-    │  5. Score Relevance                     │
-    │  6. Rank & Format Digest                │
-    └─────────────────────────────────────────┘
+
+### LangGraph Pipeline
+
+The digest generation uses a 7-stage [LangGraph](https://github.com/langchain-ai/langgraph) pipeline with parallel execution:
+
+```mermaid
+graph LR
+    A[fetch_hn] --> B[fetch_article]
+    B --> C[filter]
+    C --> D[summarize]
+    D --> E[score]
+    E --> F[rank]
+    F --> G[format]
+
+    style B fill:#e1f5fe
 ```
 
-**LangGraph Orchestration Pipeline**:
-1. **Fetch**: Pulls top/new/best stories from HN API based on your profile
-2. **Extract**: Parallel article extraction with partial failure tolerance
-3. **Filter**: Removes articles without extractable content
-4. **Summarize**: Claude 3.5 Haiku generates summaries in chunked batches (5 articles/batch)
-5. **Score**: Hybrid scoring (70% relevance + 30% popularity)
-6. **Rank**: Sorts by final score and limits to max_articles
-7. **Format**: Assembles digest with stats and metadata
+| Stage | Node | Description |
+|-------|------|-------------|
+| 1 | `fetch_hn` | Fetch stories from HN API (top/new/best/ask/show) |
+| 2 | `fetch_article` | **Parallel** content extraction via Send pattern |
+| 3 | `filter` | Remove articles without extractable content |
+| 4 | `summarize` | Claude 3.5 Haiku batch summarization |
+| 5 | `score` | Hybrid relevance + popularity scoring |
+| 6 | `rank` | Sort by final score, apply limits |
+| 7 | `format` | Assemble digest with statistics |
 
-**Real-time Progress**: Server-Sent Events (SSE) stream pipeline stages to the UI with animated loading indicators and HN fun facts. Users can cancel in-progress requests using the Cancel button, which gracefully aborts the stream via AbortController.
+### Tech Stack
 
-**Digest Statistics**: Each digest includes metrics showing total time, articles processed, filter pass rates, and summarization success rates.
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Backend** | FastAPI | Async REST API with SSE streaming |
+| **AI Orchestration** | LangGraph | Pipeline management with parallel execution |
+| **LLM** | Claude 3.5 Haiku | Cost-efficient summarization |
+| **Frontend** | Vanilla JS + Jinja2 | Lightweight, no build step |
+| **Styling** | Tailwind CSS | Utility-first responsive design |
+| **Observability** | LangSmith | Pipeline tracing and debugging |
 
-## Privacy First
+## Documentation
 
-- **No accounts**: Use immediately, no sign-up required
-- **No tracking**: Zero analytics, no behavior logging
-- **Local storage**: Your preferences never leave your browser
-- **Ephemeral processing**: Article content processed in real-time, not stored
-- **Global rate limiting**: API protection without per-IP tracking (30 requests per 60 seconds)
-- **Cancellable requests**: Abort long-running digests anytime with the Cancel button
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/architecture.md) | System design, data models, API contracts |
+| [Product Requirements](docs/product.md) | Features, user stories, roadmap |
+| [Design Specs](docs/design/) | Implementation details for each component |
+| [ADRs](docs/adr/) | Architecture Decision Records |
 
-## Technology
+### Architecture Decision Records
 
-Built with modern, production-ready tools:
-
-| Component | Technology |
-|-----------|------------|
-| Backend | FastAPI (Python) |
-| AI Pipeline | LangGraph + Claude 3.5 Haiku |
-| Streaming | Server-Sent Events (SSE) |
-| Frontend | Vanilla JS + Jinja2 + Tailwind |
-| Package Manager | uv |
+| ADR | Decision | Rationale |
+|-----|----------|-----------|
+| [001](docs/adr/001-langgraph-pipeline-architecture.md) | LangGraph for orchestration | Parallel execution, error handling, observability |
+| [002](docs/adr/002-sse-streaming-over-htmx.md) | SSE over HTMX | Real-time progress for 30-60s operations |
+| [003](docs/adr/003-privacy-first-architecture.md) | Privacy-first architecture | localStorage only, no server-side user data |
+| [004](docs/adr/004-tag-based-relevance-scoring.md) | Tag-based scoring | Simple, fast, explainable personalization |
+| [005](docs/adr/005-claude-haiku-for-summarization.md) | Claude Haiku | 10x cost savings with batch processing |
 
 ## Development
 
 ```bash
-make install     # Install dependencies
-make dev         # Start dev server with hot reload
+make install     # Install dependencies with uv
+make dev         # Start dev server (hot reload)
 make test        # Run test suite (469 tests)
-make lint        # Run linting
-make typecheck   # Run type checking
+make test-cov    # Run with coverage report
+make lint        # Code style (ruff)
+make typecheck   # Type checking (mypy)
+make check       # All quality gates
 ```
 
-### Project Status
+### Project Structure
 
-| Component | Status | Tests | Description |
-|-----------|--------|-------|-------------|
-| HN API Client | ✅ Complete | 48 | Async client with retry logic |
-| Article Extraction | ✅ Complete | 66 | ArticleLoader with blocked domains, content extraction |
-| LLM Summarization | ✅ Complete | 42 | LangChain-Anthropic with batch support |
-| Relevance Scoring | ✅ Complete | 186 | Tag-based personalization engine |
-| LangGraph Pipeline | ✅ Complete | 78 | StateGraph orchestration with 7 nodes |
-| Digest Models | ✅ Complete | 4 | Pydantic models for digest output |
-| API Endpoints | ✅ Complete | 15 | FastAPI REST API with `/api/v1/digest` |
-| Web UI | ✅ Complete | 8 | Vanilla JS + Tailwind interface with themes |
-| Rate Limiting | ✅ Complete | 30 | Privacy-first global rate limiting (30 req/min) |
+```
+hn-herald/
+├── src/hn_herald/
+│   ├── api/              # FastAPI routes, rate limiting
+│   ├── graph/            # LangGraph pipeline (7 nodes)
+│   ├── models/           # Pydantic models
+│   ├── services/         # Business logic (HN client, loader, LLM, scoring)
+│   ├── templates/        # Jinja2 HTML templates
+│   └── static/           # CSS, JS assets
+├── tests/                # 469 tests (unit, integration, API)
+├── docs/                 # Architecture, design specs, ADRs
+└── Makefile              # Development commands
+```
 
-**Total Test Coverage**: 469 tests
+### Quality Metrics
 
-### Documentation
-
-| Document | Description |
-|----------|-------------|
-| [Architecture](docs/architecture.md) | Technical architecture and system design |
-| [ADRs](docs/adr/README.md) | Architecture Decision Records |
-| [Design Specs](docs/design/) | Implementation specifications |
-| [Product](docs/product.md) | Product requirements |
-
-### Key Architecture Decisions
-
-| Decision | Rationale |
-|----------|-----------|
-| [LangGraph Pipeline](docs/adr/001-langgraph-pipeline-architecture.md) | Parallel execution, error handling, LangSmith observability |
-| [SSE Streaming](docs/adr/002-sse-streaming-over-htmx.md) | Real-time progress for 15-30s pipeline |
-| [Privacy-First](docs/adr/003-privacy-first-architecture.md) | localStorage only, no server-side user data |
-| [Tag-Based Scoring](docs/adr/004-tag-based-relevance-scoring.md) | Simple, fast, explainable personalization |
-| [Haiku for Summaries](docs/adr/005-claude-haiku-for-summarization.md) | 10x cost savings with batch processing |
+| Metric | Value |
+|--------|-------|
+| Test Count | 469 |
+| Coverage | 70%+ |
+| Type Coverage | Strict (mypy) |
+| Linting | ruff |
 
 ## Contributing
 
-Contributions welcome! Please read the architecture docs first and ensure tests pass before submitting PRs.
+Contributions welcome! Please:
+
+1. Read the [Architecture docs](docs/architecture.md)
+2. Check existing [ADRs](docs/adr/) for context
+3. Ensure `make check` passes
+4. Include tests for new functionality
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+**Built with [LangGraph](https://github.com/langchain-ai/langgraph) and [Claude](https://anthropic.com)**
+
+</div>

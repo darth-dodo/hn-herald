@@ -8,6 +8,8 @@ The FastAPI REST API layer exposes the digest generation functionality built in 
 
 **Target**: MVP-5 milestone - "API endpoints" with contract tests passing and OpenAPI documentation.
 
+> **Note**: This document describes the original design specification. For the current implementation details, see [05b-fastapi-layer.md](./05b-fastapi-layer.md) which reflects the actual deployed API.
+
 ---
 
 ## Requirements

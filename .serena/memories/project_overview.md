@@ -31,7 +31,7 @@ Privacy-first, personalized HackerNews digest application that:
 | LLM Interface | LangChain-Anthropic |
 | Model | Claude Sonnet 4 |
 | Observability | LangSmith |
-| Caching | LangChain Cache (SQLite) |
+| Caching | Not implemented |
 | Output Parsing | PydanticOutputParser |
 | Document Loading | WebBaseLoader |
 | Text Processing | RecursiveCharacterSplitter |
