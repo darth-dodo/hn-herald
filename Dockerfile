@@ -38,7 +38,10 @@ RUN uv pip install --system .
 # Expose the application port
 EXPOSE 8000
 
+# Set default port (Railway will override via PORT env var)
+ENV PORT=8000
+
 # Run the FastAPI application with uvicorn
 # --host 0.0.0.0 allows connections from outside the container
-# PORT environment variable is automatically set by Railway (defaults to 8000 locally)
-CMD ["sh", "-c", "uvicorn hn_herald.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# PORT environment variable is automatically set by Railway
+CMD uvicorn hn_herald.main:app --host 0.0.0.0 --port $PORT
