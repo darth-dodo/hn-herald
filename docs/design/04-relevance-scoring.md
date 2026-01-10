@@ -118,25 +118,33 @@ Service for calculating relevance scores and ranking articles.
 ### UserProfile Model
 
 ```python
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from hn_herald.models.story import StoryType
 
 
 class UserProfile(BaseModel):
-    """User preferences for article relevance scoring.
+    """User preferences for article relevance scoring and digest generation.
 
     Stores interest and disinterest tags used to calculate
-    personalized relevance scores for articles.
+    personalized relevance scores, along with fetch preferences.
 
     Attributes:
         interest_tags: Tags for topics user wants to see more of.
         disinterest_tags: Tags for topics user wants to filter out.
         min_score: Minimum final score threshold (0-1).
+        max_articles: Maximum number of articles in digest.
+        fetch_type: Type of HN stories to fetch (TOP, NEW, BEST, etc.).
+        fetch_count: Number of stories to fetch from HN API.
 
     Example:
         >>> profile = UserProfile(
         ...     interest_tags=["python", "ai", "rust"],
         ...     disinterest_tags=["crypto", "blockchain"],
         ...     min_score=0.3,
+        ...     max_articles=10,
+        ...     fetch_type=StoryType.TOP,
+        ...     fetch_count=30,
         ... )
         >>> "python" in profile.interest_tags
         True
@@ -148,6 +156,7 @@ class UserProfile(BaseModel):
         "str_strip_whitespace": True,
     }
 
+    # Relevance scoring preferences
     interest_tags: list[str] = Field(
         default_factory=list,
         description="Tags for topics to see more of",
@@ -163,6 +172,24 @@ class UserProfile(BaseModel):
         ge=0.0,
         le=1.0,
         description="Minimum final score threshold (0-1)",
+    )
+
+    # Digest generation preferences
+    max_articles: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Maximum number of articles in digest",
+    )
+    fetch_type: StoryType = Field(
+        default=StoryType.TOP,
+        description="Type of HN stories to fetch",
+    )
+    fetch_count: int = Field(
+        default=30,
+        ge=1,
+        le=100,
+        description="Number of stories to fetch from HN API",
     )
 
     @field_validator("interest_tags", "disinterest_tags", mode="before")
@@ -187,6 +214,26 @@ class UserProfile(BaseModel):
                 seen.add(normalized)
                 result.append(normalized)
         return result
+
+    @model_validator(mode="after")
+    def validate_no_tag_overlap(self) -> "UserProfile":
+        """Ensure interest and disinterest tags do not overlap.
+
+        Returns:
+            The validated UserProfile instance.
+
+        Raises:
+            ValueError: If any tags appear in both interest and disinterest lists.
+        """
+        if not self.interest_tags or not self.disinterest_tags:
+            return self
+
+        overlap = set(self.interest_tags) & set(self.disinterest_tags)
+        if overlap:
+            raise ValueError(
+                f"Tags cannot be in both interest and disinterest lists: {sorted(overlap)}"
+            )
+        return self
 
     @property
     def has_preferences(self) -> bool:
@@ -278,7 +325,7 @@ class ScoredArticle(BaseModel):
     personalized ranking in the digest.
 
     Attributes:
-        summarized_article: The SummarizedArticle from MVP-3.
+        article: The SummarizedArticle from MVP-3.
         relevance: Relevance score details.
         popularity_score: Normalized HN popularity (0-1).
         final_score: Composite score (70% relevance + 30% popularity).
@@ -286,13 +333,15 @@ class ScoredArticle(BaseModel):
     Example:
         >>> # Assuming summarized_article and relevance are defined
         >>> scored = ScoredArticle(
-        ...     summarized_article=summarized_article,
+        ...     article=summarized_article,
         ...     relevance=relevance,
         ...     popularity_score=0.6,
         ...     final_score=0.74,
         ... )
         >>> scored.final_score
         0.74
+        >>> scored.is_filtered(min_score=0.5)
+        False
     """
 
     model_config = {
@@ -300,7 +349,7 @@ class ScoredArticle(BaseModel):
         "extra": "ignore",
     }
 
-    summarized_article: SummarizedArticle = Field(
+    article: SummarizedArticle = Field(
         ...,
         description="The SummarizedArticle from MVP-3",
     )
@@ -321,17 +370,29 @@ class ScoredArticle(BaseModel):
         description="Composite final score (70% relevance + 30% popularity)",
     )
 
+    def is_filtered(self, min_score: float = 0.0) -> bool:
+        """Check if article should be filtered based on score threshold.
+
+        Args:
+            min_score: Minimum score threshold (0-1). Articles below
+                this threshold should be filtered out.
+
+        Returns:
+            True if final_score is below the minimum threshold.
+        """
+        return self.final_score < min_score
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def story_id(self) -> int:
         """Get the story ID for convenience."""
-        return self.summarized_article.article.story_id
+        return self.article.article.story_id
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def title(self) -> str:
         """Get the article title for convenience."""
-        return self.summarized_article.article.title
+        return self.article.article.title
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -444,6 +505,9 @@ class ScoringService:
     # Default score for articles with no tag matches
     NEUTRAL_SCORE: float = 0.5
 
+    # Score for articles matching disinterest tags
+    DISINTEREST_PENALTY_SCORE: float = 0.1
+
     # HN score normalization parameters
     MAX_HN_SCORE: int = 500  # Scores above this are capped at 1.0
 
@@ -485,6 +549,7 @@ class ScoringService:
     def score_articles(
         self,
         articles: Sequence[SummarizedArticle],
+        *,
         filter_below_min: bool = True,
     ) -> list[ScoredArticle]:
         """Score and rank multiple articles.
@@ -535,14 +600,12 @@ class ScoringService:
         self,
         matched_interest: list[str],
         matched_disinterest: list[str],
-        base_score: float,
     ) -> str:
         """Generate human-readable reason for relevance score.
 
         Args:
             matched_interest: Interest tags that matched.
             matched_disinterest: Disinterest tags that matched.
-            base_score: The calculated relevance score.
 
         Returns:
             Human-readable explanation string.
@@ -570,10 +633,10 @@ flowchart TD
     E --> F[Find matched_disinterest tags]
 
     F --> G{Any disinterest matches?}
-    G -->|Yes| H[Penalize: score = 0.1]
+    G -->|Yes| H[Penalize: score = DISINTEREST_PENALTY_SCORE 0.1]
     G -->|No| I{Any interest matches?}
 
-    I -->|Yes| J[Boost: score = match_ratio * 0.9 + 0.1]
+    I -->|Yes| J[Boost: score = 0.5 + match_ratio * 0.5]
     I -->|No| K[Neutral: score = 0.5]
 
     H --> L[Generate reason string]
@@ -591,11 +654,27 @@ flowchart TD
 
 ```python
 def _calculate_relevance(self, article_tags: list[str]) -> RelevanceScore:
-    """Calculate relevance score from tag matching."""
+    """Calculate relevance score from tag matching.
+
+    Algorithm:
+    - If disinterest tags match: score = 0.1 (penalized)
+    - If interest tags match: score = 0.5 + (match_ratio * 0.5), range 0.5-1.0
+    - If no matches: score = 0.5 (neutral)
+    - If no tags: score = 0.5 (neutral)
+    """
     if not article_tags:
         return RelevanceScore(
             score=self.NEUTRAL_SCORE,
             reason="No tags to match",
+            matched_interest_tags=[],
+            matched_disinterest_tags=[],
+        )
+
+    # Handle empty profile
+    if not self.profile.has_preferences:
+        return RelevanceScore(
+            score=self.NEUTRAL_SCORE,
+            reason="No preferences configured",
             matched_interest_tags=[],
             matched_disinterest_tags=[],
         )
@@ -616,16 +695,17 @@ def _calculate_relevance(self, article_tags: list[str]) -> RelevanceScore:
     # Calculate score
     if matched_disinterest:
         # Penalize articles matching disinterest tags
-        score = 0.1
+        score = self.DISINTEREST_PENALTY_SCORE
     elif matched_interest:
         # Boost based on proportion of interest tags matched
         match_ratio = len(matched_interest) / len(self.profile.interest_tags)
-        score = match_ratio * 0.9 + 0.1  # Scale to 0.1-1.0
+        # Scale to 0.5-1.0 range
+        score = self.NEUTRAL_SCORE + (match_ratio * 0.5)
     else:
         # Neutral score for no matches
         score = self.NEUTRAL_SCORE
 
-    reason = self._generate_reason(matched_interest, matched_disinterest, score)
+    reason = self._generate_reason(matched_interest, matched_disinterest)
 
     return RelevanceScore(
         score=score,
@@ -846,6 +926,9 @@ POPULARITY_WEIGHT: float = 0.3
 
 # Default score when no tag matches
 NEUTRAL_SCORE: float = 0.5
+
+# Score for articles matching disinterest tags
+DISINTEREST_PENALTY_SCORE: float = 0.1
 
 # HN score normalization cap
 MAX_HN_SCORE: int = 500

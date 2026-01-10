@@ -146,28 +146,29 @@ sequenceDiagram
 ```
 src/hn_herald/
 ├── templates/
-│   ├── base.html              # Base layout with Tailwind CDN (NEW)
-│   ├── index.html             # Home page with form and results (NEW)
+│   ├── base.html              # Base layout with HN-style theming
+│   ├── index.html             # Home page with form and results
 │   ├── partials/
-│   │   ├── digest_form.html   # Profile form partial (NEW)
-│   │   ├── article_card.html  # Single article card (NEW)
-│   │   ├── article_list.html  # Article list container (NEW)
-│   │   ├── tag_selector.html  # Tag selection component (NEW)
-│   │   ├── loading.html       # Loading spinner (NEW)
-│   │   └── error.html         # Error display (NEW)
+│   │   ├── digest_form.html   # Profile form partial with SSE submission
+│   │   ├── article_card.html  # Single article card (Tailwind-styled)
+│   │   ├── digest_results.html # Digest results container with stats
+│   │   ├── tag_selector.html  # Tag selection component (DaisyUI-styled)
+│   │   ├── loading.html       # Loading spinner (HTMX-style overlay)
+│   │   └── error.html         # Error display with troubleshooting
 │
 ├── static/
 │   ├── css/
-│   │   └── styles.css         # Custom Tailwind extensions (NEW)
+│   │   ├── input.css          # Tailwind input configuration
+│   │   └── styles.css         # Compiled Tailwind + HN theme CSS
 │   ├── js/
-│   │   └── app.js             # Profile management + HTMX helpers (NEW)
-│   └── favicon.ico            # App favicon (NEW)
+│   │   └── app.js             # Profile management + SSE digest generation
+│   └── favicon.svg            # App favicon (SVG format)
 │
 ├── api/
-│   ├── routes.py              # Add template routes (UPDATE)
-│   └── templates.py           # Template helpers (NEW)
+│   ├── routes.py              # Template routes and API endpoints
+│   └── templates.py           # Template helpers (if exists)
 │
-└── main.py                    # Mount static files (UPDATE)
+└── main.py                    # Mount static files
 ```
 
 ---
@@ -176,122 +177,161 @@ src/hn_herald/
 
 ### Form Submission Pattern
 
-```html
-<!-- digest_form.html -->
-<form
-  hx-post="/api/v1/digest"
-  hx-target="#results"
-  hx-swap="innerHTML"
-  hx-indicator="#loading"
-  hx-on::before-request="saveProfile()"
-  hx-on::after-request="hideLoading()"
-  class="space-y-6">
+**Note**: The actual implementation uses JavaScript with Server-Sent Events (SSE) instead of pure HTMX form submission to support real-time pipeline progress updates.
 
-  <!-- Form fields -->
-  <button type="submit" class="btn-primary">
+```html
+<!-- digest_form.html (actual implementation) -->
+<form id="digest-form" onsubmit="return false;">
+  <!-- Form fields with HN-style classes -->
+  <button type="button" class="hn-button" onclick="generateDigest()">
     Generate Digest
   </button>
 </form>
+
+<!-- Loading Indicator with Fun Facts -->
+<div id="loading" style="display: none;">
+  <div class="hn-loading"></div>
+  <div id="pipeline-stage">Generating your personalized digest...</div>
+  <button type="button" class="hn-button-small" onclick="abortDigest()">Cancel</button>
+  <div id="fun-fact"><!-- Rotating HN fun facts --></div>
+</div>
 ```
 
 **Key Features**:
-- `hx-post`: POST to digest endpoint
-- `hx-target`: Replace #results div content
-- `hx-swap="innerHTML"`: Replace inner content
-- `hx-indicator`: Show loading spinner
-- `hx-on::before-request`: Save profile to localStorage
-- `hx-on::after-request`: Hide loading state
+- JavaScript `generateDigest()` function handles form submission
+- SSE streaming via `fetch()` to `/api/v1/digest/stream` endpoint
+- Real-time pipeline stage updates via `updatePipelineStage()`
+- Cancel button with `abortDigest()` function
+- Fun facts rotation during loading
 
 ### Partial Swap Pattern
 
+**Note**: The actual implementation uses `digest_results.html` and JavaScript-based content rendering via `displayDigestResults()`.
+
 ```html
-<!-- article_list.html (returned from API) -->
-<div id="results" class="space-y-4">
+<!-- digest_results.html (server-rendered for HTMX fallback) -->
+<div id="results" class="space-y-6">
+  {% if stats %}
+  <div class="bg-white rounded-lg shadow-md p-4 sm:p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Digest Statistics</h2>
+    <!-- Statistics grid with fetched, filtered, final, errors, time -->
+  </div>
+  {% endif %}
+
   {% if articles %}
+  <div class="space-y-4" role="list" aria-label="Personalized articles">
     {% for article in articles %}
+    <div role="listitem">
       {% include 'partials/article_card.html' %}
-    {% endfor %}
-  {% else %}
-    <div class="empty-state">
-      No articles found matching your interests.
     </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <!-- Empty state with suggestions -->
   {% endif %}
 </div>
 ```
 
 **Key Features**:
-- Server returns HTML fragments
-- HTMX swaps content client-side
-- No JSON parsing needed
-- Progressive enhancement
+- SSE responses trigger JavaScript `displayDigestResults()` function
+- Results rendered client-side with HN-style formatting
+- Includes pipeline statistics (stories fetched, extracted, summarized, scored)
+- Fallback to server-rendered templates for non-JS scenarios
 
 ### Loading State Pattern
 
-```html
-<!-- index.html -->
-<div id="loading" class="htmx-indicator">
-  {% include 'partials/loading.html' %}
-</div>
-
-<!-- loading.html -->
-<div role="status" class="flex items-center justify-center p-8">
-  <svg class="animate-spin h-8 w-8 text-blue-600"
-       xmlns="http://www.w3.org/2000/svg"
-       fill="none"
-       viewBox="0 0 24 24">
-    <circle class="opacity-25" cx="12" cy="12" r="10"
-            stroke="currentColor" stroke-width="4"></circle>
-    <path class="opacity-75" fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-  </svg>
-  <span class="ml-3 text-gray-600">Generating your digest...</span>
-</div>
-```
-
-**Key Features**:
-- `htmx-indicator` class auto-shows on request
-- ARIA `role="status"` for screen readers
-- Tailwind animation utilities
-- Accessible loading message
-
-### Error Handling Pattern
+**Note**: The actual implementation uses two loading approaches:
+1. **digest_form.html**: Inline loading with HN-style spinner, pipeline stages, and fun facts
+2. **loading.html**: HTMX-style overlay for fallback scenarios
 
 ```html
-<!-- error.html (returned on error) -->
-<div id="results" class="error-state">
-  <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded"
-       role="alert">
-    <div class="flex">
-      <div class="flex-shrink-0">
-        <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-        </svg>
-      </div>
-      <div class="ml-3">
-        <h3 class="text-sm font-medium text-red-800">
-          Error generating digest
-        </h3>
-        <p class="mt-2 text-sm text-red-700">
-          {{ error_message }}
-        </p>
-        <button
-          hx-get="/"
-          hx-target="body"
-          hx-swap="outerHTML"
-          class="mt-3 text-sm font-medium text-red-800 hover:text-red-900">
-          Try again →
-        </button>
-      </div>
-    </div>
+<!-- digest_form.html (actual inline loading) -->
+<div id="loading" style="display: none;">
+  <div class="hn-loading"></div>
+  <div id="pipeline-stage">Generating your personalized digest...</div>
+  <button type="button" class="hn-button-small" onclick="abortDigest()">Cancel</button>
+  <div id="fun-fact">
+    <div style="font-weight: bold;">HN Fun Fact</div>
+    <div><!-- Rotating fun facts about Hacker News --></div>
+  </div>
+</div>
+
+<!-- loading.html (HTMX overlay fallback) -->
+<div id="loading" class="htmx-indicator fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
+     role="status" aria-live="polite" aria-label="Generating personalized digest">
+  <div class="bg-white rounded-lg p-6 sm:p-8 max-w-sm w-full mx-auto shadow-xl">
+    <svg class="animate-spin h-10 w-10 text-blue-600" ...></svg>
+    <h3>Generating Your Digest</h3>
+    <p>Fetching stories, summarizing articles, and scoring relevance...</p>
   </div>
 </div>
 ```
 
 **Key Features**:
-- ARIA `role="alert"` for screen readers
-- Accessible error icons
-- Retry button with HTMX
-- Tailwind error styling
+- HN-style spinner with CSS animation (`hn-loading` class)
+- Real-time pipeline stage updates via JavaScript
+- Cancel button to abort long-running requests
+- Rotating fun facts about Hacker News (15 facts, 5-second intervals)
+- ARIA `role="status"` for screen readers in HTMX fallback
+
+### Error Handling Pattern
+
+**Note**: The actual implementation includes error type-specific guidance and troubleshooting tips.
+
+```html
+<!-- error.html (actual implementation) -->
+<div id="results" class="space-y-4">
+  <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 sm:p-6 shadow-md"
+       role="alert" aria-live="assertive">
+    <div class="flex items-start gap-3">
+      <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">...</svg>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-sm font-medium text-red-800 mb-2">Error Generating Digest</h3>
+        <div class="text-sm text-red-700 mb-4">{{ error_message }}</div>
+
+        <!-- Error type-specific guidance -->
+        {% if error_type == 'validation_error' %}
+        <div class="bg-red-100 rounded p-3">
+          <p>Please check: interest tags, story count (10-100), article limit (1-50), min score (0.0-1.0)</p>
+        </div>
+        {% elif error_type == 'timeout' %}
+        <div class="bg-red-100 rounded p-3">
+          <p>Request took too long. Try reducing stories to fetch.</p>
+        </div>
+        {% elif error_type == 'rate_limit' %}
+        <div class="bg-red-100 rounded p-3">
+          <p>Too many requests. Please wait before trying again.</p>
+        </div>
+        {% endif %}
+
+        <!-- Action buttons -->
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button onclick="window.location.reload()" class="...">Try Again</button>
+          <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="...">Adjust Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Troubleshooting Tips -->
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <h4>Troubleshooting Tips</h4>
+    <ul>
+      <li>Start with fewer stories (10-30) for faster results</li>
+      <li>Ensure at least one interest tag is selected</li>
+      <li>Lower the minimum relevance score</li>
+      <li>Check your internet connection</li>
+    </ul>
+  </div>
+</div>
+```
+
+**Key Features**:
+- ARIA `role="alert"` with `aria-live="assertive"` for screen readers
+- Error type-specific guidance (validation, timeout, rate_limit, api_error)
+- Troubleshooting tips section
+- JavaScript-based retry/adjust buttons (not HTMX)
+- Responsive mobile-friendly layout
 
 ---
 
@@ -299,18 +339,18 @@ src/hn_herald/
 
 ### Base Layout (base.html)
 
-**Purpose**: Master template with HTML structure, Tailwind CSS, HTMX, and meta tags.
+**Purpose**: Master template with HN-style theming, Tailwind CSS, HTMX, and theme switching.
 
 **Structure**:
 ```html
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Privacy-first personalized HackerNews digest with AI summaries">
 
-  <!-- Tailwind CSS -->
+  <!-- Tailwind CSS (compiled with HN themes) -->
   <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
 
   <!-- HTMX -->
@@ -318,37 +358,61 @@ src/hn_herald/
 
   <title>{% block title %}HN Herald - AI-Powered HackerNews Digest{% endblock %}</title>
 
-  <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='/favicon.ico') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='/favicon.svg') }}">
 </head>
-<body class="h-full bg-gray-50">
-  <!-- Header -->
-  <header class="bg-white shadow-sm">
-    <div class="max-w-4xl mx-auto px-4 py-4">
-      <h1 class="text-2xl font-bold text-gray-900">
-        📰 HN Herald
-      </h1>
-      <p class="text-sm text-gray-600">
-        Your personalized HackerNews digest
-      </p>
+<body>
+  <!-- HN-style themed header -->
+  <header class="hn-header">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: var(--header-text); font-weight: bold;">HN Herald</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div>
+          <span style="color: var(--header-text); font-size: 9pt;">theme:</span>
+          <span id="theme-switcher" style="margin-left: 4px;"></span>
+        </div>
+      </div>
     </div>
   </header>
 
   <!-- Main Content -->
-  <main class="max-w-4xl mx-auto px-4 py-8">
+  <main class="hn-container">
     {% block content %}{% endblock %}
   </main>
 
   <!-- Footer -->
-  <footer class="mt-16 border-t border-gray-200">
-    <div class="max-w-4xl mx-auto px-4 py-6 text-center text-sm text-gray-500">
-      <p>Privacy-first • No tracking • Open source</p>
-    </div>
+  <footer class="hn-footer">
+    Privacy-first • No tracking • Open source • Built for HN
   </footer>
 
   <!-- Custom JS -->
   <script src="{{ url_for('static', path='/js/app.js') }}"></script>
 </body>
 </html>
+```
+
+**Theme System**:
+The implementation includes three themes controlled via `data-theme` attribute:
+- `hn` (default): Classic HN orange (#ff6600)
+- `ocean`: Blue-green theme (#006d77)
+- `dark`: Dark mode with amber accents (#ffa726)
+
+**CSS Custom Properties**:
+```css
+:root {
+  --primary-color: #ff6600;
+  --bg-color: #f6f6ef;
+  --text-color: #000000;
+  --secondary-color: #828282;
+  --border-color: #d4d4cc;
+  --header-bg: #ff6600;
+  --header-text: #000000;
+  --input-bg: #ffffff;
+  --selected-bg: #ffffff;
+  --button-bg: #ff6600;
+  --button-text: #ffffff;
+}
 ```
 
 **Accessibility**:
@@ -358,185 +422,168 @@ src/hn_herald/
 - Descriptive title and meta description
 
 **Performance**:
-- Minimal external dependencies
-- Tailwind CSS self-hosted
+- Compiled Tailwind CSS (self-hosted)
 - HTMX from CDN (small, cacheable)
-- No heavy JavaScript frameworks
+- SVG favicon for crisp rendering
+- Theme loaded before DOMContentLoaded to prevent flash
 
 ---
 
 ### Digest Form (digest_form.html)
 
-**Purpose**: User input form for profile configuration and digest generation.
+**Purpose**: User input form for profile configuration and SSE-based digest generation.
 
 **Structure**:
 ```html
-<form
-  id="digest-form"
-  hx-post="/api/v1/digest"
-  hx-target="#results"
-  hx-swap="innerHTML"
-  hx-indicator="#loading"
-  hx-on::before-request="saveProfile()"
-  class="bg-white rounded-lg shadow-md p-6 space-y-6">
+<form id="digest-form" onsubmit="return false;">
 
   <!-- Interest Tags -->
-  <div>
-    <label for="interest-tags" class="block text-sm font-medium text-gray-700 mb-2">
-      Interest Tags
-      <span class="text-xs text-gray-500 ml-2">(Topics you want to see)</span>
-    </label>
-    {% include 'partials/tag_selector.html' with {
-      'field_id': 'interest-tags',
-      'field_name': 'interest_tags',
-      'placeholder': 'Add tags like: python, ai, startups...',
-      'categories': predefined_tags
-    } %}
+  <div class="hn-section-title">Interest Tags</div>
+  <div class="hn-selected-tags" id="interest-tags-selected">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Selected: (none) </span>
+    <a href="#" onclick="removeAllTags('interest-tags'); return false;">[remove all]</a>
   </div>
-
-  <!-- Disinterest Tags -->
-  <div>
-    <label for="disinterest-tags" class="block text-sm font-medium text-gray-700 mb-2">
-      Disinterest Tags
-      <span class="text-xs text-gray-500 ml-2">(Topics to filter out)</span>
-    </label>
-    {% include 'partials/tag_selector.html' with {
-      'field_id': 'disinterest-tags',
-      'field_name': 'disinterest_tags',
-      'placeholder': 'Add tags like: crypto, blockchain...',
-      'categories': []
-    } %}
+  <div style="margin-bottom: 8px;">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Add: </span>
+    {% for category_name, tags in predefined_tags.items() %}
+      {% for tag in tags %}
+        <a href="#" class="hn-tag-link" onclick="addTag('interest-tags', '{{ tag }}'); return false;">{{ tag }}</a>
+        {% if not loop.last %} | {% endif %}
+      {% endfor %}
+    {% endfor %}
   </div>
+  <div style="margin-bottom: 12px;">
+    <span style="color: var(--secondary-color); font-size: 9pt;">Custom: </span>
+    <input type="text" id="custom-interest-tag" placeholder="type tag" class="hn-input"
+           onkeypress="if(event.key==='Enter'){addTag('interest-tags', this.value); this.value=''; return false;}">
+    <button type="button" class="hn-button-small"
+            onclick="addTag('interest-tags', document.getElementById('custom-interest-tag').value);">add</button>
+  </div>
+  <input type="hidden" name="interest_tags" id="interest-tags-hidden" value="">
 
-  <!-- Story Type -->
-  <div>
-    <label for="story-type" class="block text-sm font-medium text-gray-700 mb-2">
-      Story Type
-    </label>
-    <select
-      id="story-type"
-      name="story_type"
-      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+  <!-- Disinterest Tags (similar structure with predefined: crypto, blockchain, nft, web3) -->
+  <div class="hn-section-title">Disinterest Tags</div>
+  <!-- ... similar tag selection structure ... -->
+  <input type="hidden" name="disinterest_tags" id="disinterest-tags-hidden" value="">
+
+  <!-- Options (inline layout) -->
+  <div class="hn-options">
+    <label for="story-type">Story Type:</label>
+    <select id="story-type" name="story_type" class="hn-select">
       <option value="top" selected>Top Stories</option>
       <option value="new">New Stories</option>
       <option value="best">Best Stories</option>
       <option value="ask">Ask HN</option>
       <option value="show">Show HN</option>
     </select>
-  </div>
 
-  <!-- Story Count -->
-  <div>
-    <label for="story-count" class="block text-sm font-medium text-gray-700 mb-2">
-      Stories to Fetch
-      <span class="text-xs text-gray-500 ml-2">(10-100)</span>
-    </label>
-    <input
-      type="number"
-      id="story-count"
-      name="story_count"
-      min="10"
-      max="100"
-      value="30"
-      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-  </div>
+    <label for="story-count">Fetch:</label>
+    <input type="number" id="story-count" name="story_count" min="10" max="100" value="30" class="hn-input">
 
-  <!-- Article Limit -->
-  <div>
-    <label for="article-limit" class="block text-sm font-medium text-gray-700 mb-2">
-      Max Articles in Digest
-      <span class="text-xs text-gray-500 ml-2">(1-50)</span>
-    </label>
-    <input
-      type="number"
-      id="article-limit"
-      name="article_limit"
-      min="1"
-      max="50"
-      value="10"
-      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-  </div>
+    <label for="article-limit">Results:</label>
+    <input type="number" id="article-limit" name="article_limit" min="1" max="50" value="10" class="hn-input">
 
-  <!-- Minimum Score -->
-  <div>
-    <label for="min-score" class="block text-sm font-medium text-gray-700 mb-2">
-      Minimum Relevance Score
-      <span class="text-xs text-gray-500 ml-2">(0.0-1.0)</span>
-    </label>
-    <input
-      type="number"
-      id="min-score"
-      name="min_score"
-      min="0"
-      max="1"
-      step="0.1"
-      value="0.3"
-      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+    <label for="min-score">Min Score:</label>
+    <input type="number" id="min-score" name="min_score" min="0" max="1" step="0.1" value="0.3" class="hn-input">
   </div>
 
   <!-- Submit Button -->
-  <button
-    type="submit"
-    class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
-    Generate Digest
-  </button>
+  <div style="text-align: center;">
+    <button type="button" class="hn-button" onclick="generateDigest()">Generate Digest</button>
+    <div style="color: var(--secondary-color); font-size: 8pt; margin-top: 8px;">
+      Digest generation takes 1-2 minutes
+    </div>
+  </div>
 </form>
+
+<!-- Loading Indicator with Fun Facts -->
+<div id="loading" style="display: none;">
+  <div class="hn-loading"></div>
+  <div id="pipeline-stage">Generating your personalized digest...</div>
+  <button type="button" class="hn-button-small" onclick="abortDigest()">Cancel</button>
+  <div id="fun-fact">
+    <div>HN Fun Fact</div>
+    <div><!-- Rotating fun facts --></div>
+  </div>
+</div>
 ```
 
-**Accessibility**:
-- All inputs have `<label>` with `for` attributes
-- Helper text for ranges and requirements
-- Focus states with Tailwind ring utilities
-- Touch-friendly button size (min 48px height)
+**Key CSS Classes**:
+- `hn-section-title`: Bold section headers
+- `hn-tag-link`: Clickable tag links with pipe separators
+- `hn-selected-tags`: Background container for selected tags
+- `hn-input`: HN-style text inputs
+- `hn-select`: HN-style select dropdowns
+- `hn-button`: Primary action button (orange)
+- `hn-button-small`: Secondary buttons
+- `hn-options`: Inline options layout
+- `hn-loading`: Spinning loader animation
+
+**Form Submission Flow**:
+1. User clicks "Generate Digest" button
+2. `generateDigest()` saves profile to localStorage
+3. SSE request sent to `/api/v1/digest/stream`
+4. Pipeline stage updates shown in real-time
+5. Fun facts rotate every 5 seconds during loading
+6. Cancel button allows aborting long requests
+7. Results rendered via `displayDigestResults()`
 
 **Validation**:
 - HTML5 input constraints (min, max, step)
-- JavaScript validation before submission
+- Tag deduplication (case-insensitive)
+- Minimum tag length of 2 characters
 - Server-side Pydantic validation
 
 ---
 
 ### Tag Selector (tag_selector.html)
 
-**Purpose**: Multi-select tag input with predefined categories and custom tag creation.
+**Purpose**: Reusable multi-select tag input component with DaisyUI styling.
+
+**Note**: The main form uses inline HN-style tag selection in `digest_form.html`. This component (`tag_selector.html`) provides a DaisyUI-styled alternative for other contexts.
 
 **Structure**:
 ```html
-<div class="tag-selector" data-field="{{ field_name }}">
+<div class="tag-selector" data-tag-field="{{ field_name }}">
   <!-- Selected Tags Display -->
-  <div id="{{ field_id }}-selected" class="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
-    <!-- Populated by JavaScript -->
+  <div id="{{ field_id }}-selected"
+       class="flex flex-wrap gap-2 mb-3 min-h-[2rem]"
+       role="region"
+       aria-label="Selected {{ field_name }} tags"
+       aria-live="polite">
+    <span class="text-sm text-secondary">No tags selected</span>
   </div>
 
-  <!-- Tag Input -->
-  <input
-    type="text"
-    id="{{ field_id }}-input"
-    placeholder="{{ placeholder }}"
-    autocomplete="off"
-    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-    aria-label="{{ placeholder }}"
-    aria-describedby="{{ field_id }}-help">
+  <!-- Tag Input with Button -->
+  <div class="join w-full">
+    <input type="text" id="{{ field_id }}-input"
+           placeholder="{{ placeholder }}"
+           autocomplete="off"
+           class="input input-bordered join-item flex-1"
+           aria-label="{{ placeholder }}"
+           aria-describedby="{{ field_id }}-help">
+    <button type="button" onclick="addTagFromInput('{{ field_id }}')"
+            class="btn btn-secondary join-item" aria-label="Add custom tag">
+      Add
+    </button>
+  </div>
 
-  <p id="{{ field_id }}-help" class="text-xs text-gray-500 mt-1">
-    Type to add custom tags or select from suggestions below
+  <p id="{{ field_id }}-help" class="text-xs text-secondary mt-1">
+    Type to add custom tags (press Enter or comma) or select from suggestions below
   </p>
 
   <!-- Predefined Tags (Categories) -->
   {% if categories %}
-  <div class="mt-4 space-y-3">
+  <div class="mt-4 space-y-3" role="region" aria-label="Predefined tag categories">
     {% for category_name, tags in categories.items() %}
     <div>
-      <h4 class="text-xs font-semibold text-gray-600 uppercase mb-2">
-        {{ category_name }}
-      </h4>
+      <h4 class="text-xs font-bold text-neutral uppercase mb-2">{{ category_name }}</h4>
       <div class="flex flex-wrap gap-2">
         {% for tag in tags %}
-        <button
-          type="button"
-          data-tag="{{ tag }}"
-          class="tag-suggestion px-3 py-1 text-sm border border-gray-300 rounded-full hover:bg-blue-50 hover:border-blue-500 transition-colors"
-          onclick="addTag('{{ field_id }}', '{{ tag }}')">
+        <button type="button" data-tag="{{ tag }}"
+                class="badge badge-lg badge-outline badge-primary tag-chip-suggestion"
+                onclick="addTag('{{ field_id }}', '{{ tag }}')"
+                aria-label="Add {{ tag }} tag">
           {{ tag }}
         </button>
         {% endfor %}
@@ -547,82 +594,82 @@ src/hn_herald/
   {% endif %}
 
   <!-- Hidden Input for Form Submission -->
-  <input
-    type="hidden"
-    name="{{ field_name }}"
-    id="{{ field_id }}-hidden"
-    value="">
+  <input type="hidden" name="{{ field_name }}" id="{{ field_id }}-hidden" value="">
 </div>
 ```
 
-**JavaScript Interaction**:
+**JavaScript Functions** (in app.js):
 ```javascript
-// app.js
+// Add tag with case-insensitive deduplication
 function addTag(fieldId, tag) {
-  const selectedDiv = document.getElementById(`${fieldId}-selected`);
-  const hiddenInput = document.getElementById(`${fieldId}-hidden`);
+  tag = tag.trim();
+  if (!tag || tag.length < 2) return;
 
-  // Get current tags
-  const currentTags = hiddenInput.value ? hiddenInput.value.split(',') : [];
+  const tags = selectedTags[fieldId] || [];
+  if (tags.some(t => t.toLowerCase() === tag.toLowerCase())) return;
 
-  // Avoid duplicates
-  if (currentTags.includes(tag)) return;
+  tags.push(tag);
+  selectedTags[fieldId] = tags;
 
-  // Add tag
-  currentTags.push(tag);
-  hiddenInput.value = currentTags.join(',');
-
-  // Create tag element
-  const tagEl = document.createElement('span');
-  tagEl.className = 'inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm';
-  tagEl.innerHTML = `
-    ${tag}
-    <button type="button"
-            onclick="removeTag('${fieldId}', '${tag}')"
-            class="hover:text-blue-900"
-            aria-label="Remove ${tag}">
-      ×
-    </button>
-  `;
-
-  selectedDiv.appendChild(tagEl);
+  updateTagDisplay(fieldId);
+  updateHiddenInput(fieldId, tags);
 }
 
+// Remove specific tag
 function removeTag(fieldId, tag) {
-  const hiddenInput = document.getElementById(`${fieldId}-hidden`);
-  const currentTags = hiddenInput.value.split(',');
+  const tags = selectedTags[fieldId] || [];
+  selectedTags[fieldId] = tags.filter(t => t !== tag);
+  updateTagDisplay(fieldId);
+  updateHiddenInput(fieldId, selectedTags[fieldId]);
+}
 
-  // Remove tag
-  const newTags = currentTags.filter(t => t !== tag);
-  hiddenInput.value = newTags.join(',');
+// Remove all tags
+function removeAllTags(fieldId) {
+  selectedTags[fieldId] = [];
+  updateTagDisplay(fieldId);
+  updateHiddenInput(fieldId, []);
+}
 
-  // Re-render selected tags
-  renderSelectedTags(fieldId);
+// Update visible tag display (HN-style)
+function updateTagDisplay(fieldId) {
+  const selectedDiv = document.getElementById(`${fieldId}-selected`);
+  const tags = selectedTags[fieldId] || [];
+
+  if (tags.length === 0) {
+    selectedDiv.innerHTML = '<span>Selected: (none)</span> <a href="#">[remove all]</a>';
+    return;
+  }
+
+  const tagList = tags.map(tag =>
+    `<span class="hn-tag-selected">${tag} <a href="#" onclick="removeTag('${fieldId}', '${tag}')">[x]</a></span>`
+  ).join(' ');
+  selectedDiv.innerHTML = '<span>Selected: </span>' + tagList + ' <a href="#">[remove all]</a>';
 }
 ```
 
 **Accessibility**:
-- `aria-label` for input purpose
-- `aria-describedby` for helper text
-- Keyboard navigation support
-- Remove button with `aria-label`
+- `role="region"` with `aria-label` for screen readers
+- `aria-live="polite"` announces tag changes
+- `aria-describedby` links to helper text
+- Individual `aria-label` on remove buttons
 
 ---
 
 ### Article Card (article_card.html)
 
-**Purpose**: Display single article with summary, scores, and links.
+**Purpose**: Display single article with summary, scores, and links using Tailwind CSS.
+
+**Note**: This template expects a `ScoredArticle` object with nested structure: `article.article.article` for base article data, `article.article` for display fields, and direct properties for scores.
 
 **Structure**:
 ```html
-<article class="article-card bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+<article class="bg-white rounded-lg shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow duration-200">
   <!-- Header -->
   <header class="mb-4">
-    <h2 class="text-xl font-semibold text-gray-900 mb-2">
-      <a href="{{ article.url }}"
-         target="_blank"
-         rel="noopener noreferrer"
-         class="hover:text-blue-600 transition-colors">
+    <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2 leading-tight">
+      <a href="{{ article.article.article.url or article.article.article.hn_url }}"
+         target="_blank" rel="noopener noreferrer"
+         class="hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded">
         {{ article.title }}
       </a>
     </h2>
@@ -630,201 +677,228 @@ function removeTag(fieldId, tag) {
     <!-- Metadata -->
     <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
       <span class="flex items-center gap-1">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+        <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+          <!-- Star icon path -->
         </svg>
-        {{ article.hn_score }} points
+        <span>{{ article.article.article.hn_score }} points</span>
       </span>
-
-      <a href="{{ article.hn_url }}"
-         target="_blank"
-         rel="noopener noreferrer"
-         class="hover:text-blue-600 transition-colors">
-        HN Discussion →
+      <a href="{{ article.article.article.hn_url }}" target="_blank" rel="noopener noreferrer"
+         class="hover:text-blue-600 transition-colors min-h-[44px] flex items-center">
+        HN Discussion
       </a>
     </div>
   </header>
 
-  <!-- Summary -->
+  <!-- Summary (conditional) -->
+  {% if article.article.display_summary %}
   <div class="mb-4">
-    <p class="text-gray-700 leading-relaxed">
-      {{ article.summary }}
-    </p>
+    <p class="text-gray-700 leading-relaxed text-base">{{ article.article.display_summary }}</p>
   </div>
+  {% endif %}
 
-  <!-- Key Points -->
+  <!-- Key Points (conditional) -->
+  {% if article.article.display_key_points %}
   <div class="mb-4">
     <h3 class="text-sm font-semibold text-gray-900 mb-2">Key Points</h3>
     <ul class="list-disc list-inside space-y-1 text-sm text-gray-700">
-      {% for point in article.key_points %}
-      <li>{{ point }}</li>
+      {% for point in article.article.display_key_points %}
+      <li class="leading-relaxed">{{ point }}</li>
       {% endfor %}
     </ul>
   </div>
+  {% endif %}
 
-  <!-- Tags -->
+  <!-- Tech Tags (conditional) -->
+  {% if article.article.display_tags %}
   <div class="mb-4">
-    <div class="flex flex-wrap gap-2">
-      {% for tag in article.tech_tags %}
-      <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-        {{ tag }}
-      </span>
+    <div class="flex flex-wrap gap-2" role="list" aria-label="Technology tags">
+      {% for tag in article.article.display_tags %}
+      <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs" role="listitem">{{ tag }}</span>
       {% endfor %}
     </div>
   </div>
+  {% endif %}
 
-  <!-- Scores -->
-  <div class="flex items-center justify-between pt-4 border-t border-gray-200">
-    <div class="flex items-center gap-4 text-sm">
+  <!-- Scores with color coding -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-gray-200 gap-3">
+    <div class="flex flex-wrap items-center gap-3 sm:gap-4 text-sm">
       <div class="flex items-center gap-1">
         <span class="font-medium text-gray-700">Relevance:</span>
-        <span class="text-blue-600 font-semibold">
+        <span class="font-semibold {% if article.relevance_score >= 0.7 %}text-green-600{% elif article.relevance_score >= 0.5 %}text-blue-600{% else %}text-yellow-600{% endif %}">
           {{ "%.0f"|format(article.relevance_score * 100) }}%
         </span>
       </div>
-
       <div class="flex items-center gap-1">
-        <span class="font-medium text-gray-700">Final:</span>
-        <span class="text-green-600 font-semibold">
+        <span class="font-medium text-gray-700">Final Score:</span>
+        <span class="font-semibold {% if article.final_score >= 0.7 %}text-green-600{% elif article.final_score >= 0.5 %}text-blue-600{% else %}text-yellow-600{% endif %}">
           {{ "%.0f"|format(article.final_score * 100) }}%
         </span>
       </div>
     </div>
 
-    <button
-      type="button"
-      onclick="toggleReason({{ article.story_id }})"
-      class="text-sm text-gray-600 hover:text-gray-900"
-      aria-expanded="false"
-      aria-controls="reason-{{ article.story_id }}">
-      Why relevant? ↓
+    <button type="button" onclick="toggleReason({{ article.story_id }})"
+            class="text-sm text-gray-600 hover:text-gray-900 min-h-[44px] sm:min-h-0"
+            aria-expanded="false" aria-controls="reason-{{ article.story_id }}">
+      Why relevant?
     </button>
   </div>
 
-  <!-- Relevance Reason (Collapsible) -->
-  <div
-    id="reason-{{ article.story_id }}"
-    class="hidden mt-3 p-3 bg-blue-50 rounded text-sm text-gray-700"
-    aria-hidden="true">
+  <!-- Collapsible Relevance Reason -->
+  <div id="reason-{{ article.story_id }}"
+       class="hidden mt-3 p-3 bg-blue-50 rounded text-sm text-gray-700 leading-relaxed"
+       aria-hidden="true">
     {{ article.relevance_reason }}
   </div>
 </article>
 ```
 
+**Score Color Coding**:
+- >= 70%: `text-green-600` (high relevance)
+- >= 50%: `text-blue-600` (moderate relevance)
+- < 50%: `text-yellow-600` (low relevance)
+
 **Accessibility**:
 - Semantic `<article>` element
-- External link indicators (→)
-- `rel="noopener noreferrer"` for security
-- Collapsible reason with ARIA attributes
-- Color contrast meeting WCAG AA
+- `aria-hidden="true"` on decorative icons
+- `role="list"` and `role="listitem"` for tag lists
+- Touch targets minimum 44px height on mobile
+- External link indicators and `rel="noopener noreferrer"`
+- Collapsible reason with `aria-expanded` and `aria-controls`
 
 **Mobile Optimization**:
-- Touch-friendly links (min 48px)
-- Readable font sizes (16px+)
-- Adequate spacing between elements
-- Responsive flex layout
+- Responsive padding: `p-4 sm:p-6`
+- Responsive text sizes: `text-lg sm:text-xl`
+- Flex column on mobile, row on desktop for scores
+- Minimum touch targets: `min-h-[44px]`
 
 ---
 
 ### Loading Indicator (loading.html)
 
-**Purpose**: Show progress during digest generation.
+**Purpose**: HTMX-style loading overlay for fallback scenarios (not used in primary SSE flow).
+
+**Note**: The primary loading experience is inline in `digest_form.html` with HN-style spinner, pipeline stages, and fun facts. This template provides a Tailwind-styled overlay fallback.
 
 **Structure**:
 ```html
-<div
-  id="loading"
-  class="htmx-indicator fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50"
-  role="status"
-  aria-live="polite"
-  aria-label="Generating digest">
+<div id="loading"
+     class="htmx-indicator fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4"
+     role="status" aria-live="polite" aria-label="Generating personalized digest">
 
-  <div class="bg-white rounded-lg p-8 max-w-sm mx-4">
+  <div class="bg-white rounded-lg p-6 sm:p-8 max-w-sm w-full mx-auto shadow-xl">
     <div class="flex flex-col items-center gap-4">
-      <!-- Spinner -->
-      <svg class="animate-spin h-12 w-12 text-blue-600"
-           xmlns="http://www.w3.org/2000/svg"
-           fill="none"
-           viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10"
-                stroke="currentColor" stroke-width="4"></circle>
+      <!-- Animated Spinner -->
+      <svg class="animate-spin h-10 w-10 sm:h-12 sm:w-12 text-blue-600"
+           xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
         <path class="opacity-75" fill="currentColor"
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
       </svg>
 
-      <!-- Message -->
+      <!-- Loading Message -->
       <div class="text-center">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">
-          Generating Your Digest
-        </h3>
-        <p class="text-sm text-gray-600">
-          Fetching stories, summarizing articles, and scoring relevance...
-        </p>
-        <p class="text-xs text-gray-500 mt-2">
-          This usually takes 15-30 seconds
-        </p>
+        <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">Generating Your Digest</h3>
+        <p class="text-sm text-gray-600 mb-3">Fetching stories, summarizing articles, and scoring relevance...</p>
+        <p class="text-xs text-gray-500">This usually takes 15-30 seconds</p>
+      </div>
+
+      <!-- Progress Indicator -->
+      <div class="w-full">
+        <div class="h-1 bg-gray-200 rounded-full overflow-hidden">
+          <div class="h-full bg-blue-600 animate-pulse" style="width: 100%;"></div>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<style>
+  .htmx-indicator { display: none; }
+  .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { display: flex; }
+  body:has(.htmx-indicator[style*="display: flex"]) { overflow: hidden; }
+</style>
 ```
 
 **Accessibility**:
 - `role="status"` for screen reader announcement
 - `aria-live="polite"` for updates
-- `aria-label` describing action
-- Semantic HTML structure
+- `aria-hidden="true"` on decorative spinner SVG
+- Responsive sizing for mobile
 
-**UX**:
-- Full-screen overlay to prevent interaction
-- Semi-transparent background
-- Centered modal with padding
-- Time expectation management
+**CSS Features**:
+- HTMX indicator classes for auto-show/hide
+- Body scroll prevention when visible
+- Animated progress bar with pulse effect
 
 ---
 
 ## JavaScript Requirements
 
-### Profile Management (app.js)
+### app.js Overview
 
-**Purpose**: Manage localStorage persistence and form population.
+**Purpose**: Manage profile persistence, theme switching, SSE digest generation, and UI interactions.
 
-**Core Functions**:
+**Key Components**:
+1. **Theme Management**: Theme switching with localStorage persistence
+2. **Tag Management**: Add/remove tags with case-insensitive deduplication
+3. **Profile Persistence**: Save/load user preferences
+4. **SSE Digest Generation**: Stream-based digest generation with progress updates
+5. **Fun Facts**: Rotating HN facts during loading
+6. **Results Display**: Client-side rendering of digest results
+
+### Theme Management
 
 ```javascript
-// Profile storage key
-const PROFILE_KEY = 'hn_herald_profile';
+const THEME_KEY = 'hn_herald_theme';
 
-/**
- * Load user profile from localStorage
- */
-function loadProfile() {
-  try {
-    const profileJSON = localStorage.getItem(PROFILE_KEY);
-    if (!profileJSON) return null;
-
-    return JSON.parse(profileJSON);
-  } catch (error) {
-    console.error('Failed to load profile:', error);
-    return null;
-  }
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem(THEME_KEY, theme);
+  updateThemeSwitcher(theme);
 }
 
-/**
- * Save user profile to localStorage
- */
+function loadTheme() {
+  const savedTheme = localStorage.getItem(THEME_KEY) || 'hn';
+  setTheme(savedTheme);
+}
+
+function updateThemeSwitcher(currentTheme) {
+  const switcher = document.getElementById('theme-switcher');
+  if (!switcher) return;
+
+  const themes = ['hn', 'ocean', 'dark'];
+  switcher.innerHTML = themes.map(theme => {
+    if (theme === currentTheme) {
+      return `<span style="font-weight: bold;">${theme}</span>`;
+    }
+    return `<a href="#" onclick="setTheme('${theme}'); return false;">${theme}</a>`;
+  }).join(' | ');
+}
+
+// Load theme immediately (before DOMContentLoaded)
+loadTheme();
+```
+
+### Profile Management
+
+```javascript
+const PROFILE_KEY = 'hn_herald_profile';
+const selectedTags = {
+  'interest-tags': [],
+  'disinterest-tags': []
+};
+
 function saveProfile() {
   try {
     const profile = {
-      interest_tags: getTagsFromField('interest-tags'),
-      disinterest_tags: getTagsFromField('disinterest-tags'),
+      interest_tags: selectedTags['interest-tags'],
+      disinterest_tags: selectedTags['disinterest-tags'],
       story_type: document.getElementById('story-type').value,
       story_count: parseInt(document.getElementById('story-count').value),
       article_limit: parseInt(document.getElementById('article-limit').value),
       min_score: parseFloat(document.getElementById('min-score').value),
       last_updated: new Date().toISOString()
     };
-
     localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
     return profile;
   } catch (error) {
@@ -833,248 +907,261 @@ function saveProfile() {
   }
 }
 
-/**
- * Populate form fields from profile
- */
-function populateForm() {
-  const profile = loadProfile();
-  if (!profile) return;
+function loadProfile() {
+  try {
+    const profileJSON = localStorage.getItem(PROFILE_KEY);
+    if (!profileJSON) return null;
 
-  // Populate select and input fields
-  document.getElementById('story-type').value = profile.story_type || 'top';
-  document.getElementById('story-count').value = profile.story_count || 30;
-  document.getElementById('article-limit').value = profile.article_limit || 10;
-  document.getElementById('min-score').value = profile.min_score || 0.3;
+    const profile = JSON.parse(profileJSON);
 
-  // Populate tags
-  if (profile.interest_tags) {
-    profile.interest_tags.forEach(tag => addTag('interest-tags', tag));
-  }
+    // Restore tags
+    if (profile.interest_tags) {
+      selectedTags['interest-tags'] = profile.interest_tags;
+      updateTagDisplay('interest-tags');
+      updateHiddenInput('interest-tags', profile.interest_tags);
+    }
+    if (profile.disinterest_tags) {
+      selectedTags['disinterest-tags'] = profile.disinterest_tags;
+      updateTagDisplay('disinterest-tags');
+      updateHiddenInput('disinterest-tags', profile.disinterest_tags);
+    }
 
-  if (profile.disinterest_tags) {
-    profile.disinterest_tags.forEach(tag => addTag('disinterest-tags', tag));
-  }
-}
+    // Restore form fields
+    if (profile.story_type) document.getElementById('story-type').value = profile.story_type;
+    if (profile.story_count) document.getElementById('story-count').value = profile.story_count;
+    if (profile.article_limit) document.getElementById('article-limit').value = profile.article_limit;
+    if (profile.min_score) document.getElementById('min-score').value = profile.min_score;
 
-/**
- * Get tags from tag selector field
- */
-function getTagsFromField(fieldId) {
-  const hiddenInput = document.getElementById(`${fieldId}-hidden`);
-  const value = hiddenInput.value.trim();
-  return value ? value.split(',').filter(Boolean) : [];
-}
-
-/**
- * Export profile as JSON
- */
-function exportProfile() {
-  const profile = loadProfile();
-  if (!profile) {
-    alert('No profile to export');
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify(profile, null, 2)], {
-    type: 'application/json'
-  });
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'hn-herald-profile.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-/**
- * Clear profile from localStorage
- */
-function clearProfile() {
-  if (confirm('Are you sure you want to delete your profile?')) {
-    localStorage.removeItem(PROFILE_KEY);
-    location.reload();
+    return profile;
+  } catch (error) {
+    console.error('Failed to load profile:', error);
+    return null;
   }
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-  populateForm();
+document.addEventListener('DOMContentLoaded', function() {
+  loadProfile();
 });
 ```
 
 ### Tag Selection Logic
 
 ```javascript
-/**
- * Add tag to selector
- */
+// Add tag with case-insensitive deduplication
 function addTag(fieldId, tag) {
   tag = tag.trim();
-  if (!tag || tag.length < 2 || tag.length > 30) return;
+  if (!tag || tag.length < 2) return;
 
-  const selectedDiv = document.getElementById(`${fieldId}-selected`);
-  const hiddenInput = document.getElementById(`${fieldId}-hidden`);
+  const tags = selectedTags[fieldId] || [];
+  if (tags.some(t => t.toLowerCase() === tag.toLowerCase())) return;
 
-  // Get current tags
-  const currentTags = getTagsFromField(fieldId);
+  tags.push(tag);
+  selectedTags[fieldId] = tags;
 
-  // Avoid duplicates
-  if (currentTags.includes(tag)) return;
-
-  // Add tag
-  currentTags.push(tag);
-  hiddenInput.value = currentTags.join(',');
-
-  // Render tag element
-  renderSelectedTags(fieldId);
+  updateTagDisplay(fieldId);
+  updateHiddenInput(fieldId, tags);
 }
 
-/**
- * Remove tag from selector
- */
+// Remove specific tag
 function removeTag(fieldId, tag) {
-  const hiddenInput = document.getElementById(`${fieldId}-hidden`);
-  const currentTags = getTagsFromField(fieldId);
+  const tags = selectedTags[fieldId] || [];
+  selectedTags[fieldId] = tags.filter(t => t !== tag);
 
-  // Remove tag
-  const newTags = currentTags.filter(t => t !== tag);
-  hiddenInput.value = newTags.join(',');
-
-  // Re-render
-  renderSelectedTags(fieldId);
+  updateTagDisplay(fieldId);
+  updateHiddenInput(fieldId, selectedTags[fieldId]);
 }
 
-/**
- * Render selected tags display
- */
-function renderSelectedTags(fieldId) {
+// Remove all tags
+function removeAllTags(fieldId) {
+  selectedTags[fieldId] = [];
+  updateTagDisplay(fieldId);
+  updateHiddenInput(fieldId, []);
+}
+
+// Update visible tag display (HN-style)
+function updateTagDisplay(fieldId) {
   const selectedDiv = document.getElementById(`${fieldId}-selected`);
-  const tags = getTagsFromField(fieldId);
+  if (!selectedDiv) return;
 
-  // Clear existing
-  selectedDiv.innerHTML = '';
+  const tags = selectedTags[fieldId] || [];
 
-  // Render each tag
-  tags.forEach(tag => {
-    const tagEl = document.createElement('span');
-    tagEl.className = 'inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm';
-    tagEl.innerHTML = `
-      ${tag}
-      <button type="button"
-              onclick="removeTag('${fieldId}', '${tag}')"
-              class="hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-              aria-label="Remove ${tag}">
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-        </svg>
-      </button>
-    `;
-    selectedDiv.appendChild(tagEl);
-  });
-
-  // Show empty state if no tags
   if (tags.length === 0) {
-    selectedDiv.innerHTML = '<span class="text-sm text-gray-400">No tags selected</span>';
+    selectedDiv.innerHTML = '<span>Selected: (none)</span> <a href="#" onclick="removeAllTags(\'' + fieldId + '\'); return false;">[remove all]</a>';
+    return;
   }
+
+  const tagList = tags.map(tag =>
+    `<span class="hn-tag-selected">${tag} <a href="#" class="hn-tag-remove" onclick="removeTag('${fieldId}', '${tag}'); return false;">[x]</a></span>`
+  ).join(' ');
+
+  selectedDiv.innerHTML = '<span>Selected: </span>' + tagList + ' <a href="#" onclick="removeAllTags(\'' + fieldId + '\'); return false;">[remove all]</a>';
 }
 
-/**
- * Handle tag input keyboard events
- */
-function setupTagInput(fieldId) {
-  const input = document.getElementById(`${fieldId}-input`);
+// Update hidden input for form submission
+function updateHiddenInput(fieldId, tags) {
+  const hiddenInput = document.getElementById(`${fieldId}-hidden`);
+  if (!hiddenInput) return;
+  hiddenInput.value = tags.join(',');
+}
+```
 
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      const tag = input.value.trim();
-      if (tag) {
-        addTag(fieldId, tag);
-        input.value = '';
+### SSE Digest Generation
+
+```javascript
+const MOCK_MODE = window.location.search.includes('mock=true');
+let currentAbortController = null;
+let currentFunFactInterval = null;
+
+// HN Fun Facts for loading screen (15 facts)
+const HN_FUN_FACTS = [
+  "Hacker News was created by Paul Graham in 2007 and is powered by Arc, a Lisp dialect.",
+  "The orange color (#ff6600) used on HN is the same as the Y Combinator logo.",
+  "HN's algorithm favors newer stories - upvotes from the first few hours count more than later ones.",
+  // ... 12 more facts
+];
+
+function abortDigest() {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+  }
+  if (currentFunFactInterval) {
+    clearInterval(currentFunFactInterval);
+    currentFunFactInterval = null;
+  }
+  // Reset UI
+  const loadingDiv = document.getElementById('loading');
+  const buttonDiv = document.querySelector('.hn-button');
+  if (loadingDiv) loadingDiv.style.display = 'none';
+  if (buttonDiv) buttonDiv.style.display = 'block';
+}
+
+async function generateDigest() {
+  currentAbortController = new AbortController();
+
+  try {
+    saveProfile();
+
+    // Show loading, hide button
+    const buttonDiv = document.querySelector('.hn-button');
+    const loadingDiv = document.getElementById('loading');
+    const resultsDiv = document.getElementById('results');
+
+    if (buttonDiv) buttonDiv.style.display = 'none';
+    if (loadingDiv) {
+      loadingDiv.style.display = 'block';
+      currentFunFactInterval = startFunFacts();
+      updatePipelineStage('Initializing pipeline...');
+    }
+
+    // Create JSON payload
+    const payload = {
+      profile: {
+        interest_tags: selectedTags['interest-tags'] || [],
+        disinterest_tags: selectedTags['disinterest-tags'] || [],
+        min_score: parseFloat(document.getElementById('min-score').value),
+        max_articles: parseInt(document.getElementById('article-limit').value),
+        fetch_type: document.getElementById('story-type').value,
+        fetch_count: parseInt(document.getElementById('story-count').value)
+      },
+      mock: MOCK_MODE
+    };
+
+    // SSE request
+    const response = await fetch('/api/v1/digest/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: currentAbortController.signal
+    });
+
+    // Process SSE stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.substring(6));
+
+          if (data.stage === 'error') {
+            throw new Error(data.message);
+          } else if (data.stage === 'complete') {
+            // Hide loading, show results
+            if (currentFunFactInterval) clearInterval(currentFunFactInterval);
+            if (loadingDiv) loadingDiv.style.display = 'none';
+            if (buttonDiv) buttonDiv.style.display = 'block';
+            if (resultsDiv && data.digest.articles) {
+              displayDigestResults(data.digest);
+            }
+          } else if (data.message) {
+            updatePipelineStage(data.message);
+          }
+        }
       }
     }
+  } catch (error) {
+    if (error.name === 'AbortError') return; // User cancelled
+    // Handle error...
+  }
+}
+```
+
+### Results Display
+
+```javascript
+function displayDigestResults(data) {
+  const resultsDiv = document.getElementById('results');
+  if (!resultsDiv) return;
+
+  let html = '<div class="hn-digest">';
+  html += `<div class="hn-section-title">Your Personalized Digest (${data.articles.length} articles)</div>`;
+
+  data.articles.forEach((article, index) => {
+    html += `
+      <div class="hn-article">
+        <div style="font-weight: bold; margin-bottom: 4px;">
+          ${index + 1}. <a href="${article.url}" target="_blank">${article.title}</a>
+        </div>
+        <div style="font-size: 9pt; color: var(--secondary-color); margin-bottom: 8px;">
+          ${article.hn_score} points |
+          <a href="${article.hn_url}" target="_blank">discuss</a> |
+          relevance: ${(article.relevance_score * 100).toFixed(0)}%
+        </div>
+        <div style="font-size: 9pt; margin-bottom: 8px;">${article.summary}</div>
+        <div style="font-size: 9pt; color: var(--secondary-color);">
+          <strong>Key points:</strong> ${article.key_points.join(' - ')}
+        </div>
+        <div style="font-size: 9pt; color: var(--secondary-color); margin-top: 4px;">
+          <strong>Tags:</strong> ${article.tech_tags.join(', ')}
+        </div>
+      </div>
+    `;
   });
-}
 
-// Initialize tag inputs
-document.addEventListener('DOMContentLoaded', () => {
-  setupTagInput('interest-tags');
-  setupTagInput('disinterest-tags');
-});
-```
-
-### Form Validation
-
-```javascript
-/**
- * Validate form before submission
- */
-function validateForm() {
-  const interestTags = getTagsFromField('interest-tags');
-  const storyCount = parseInt(document.getElementById('story-count').value);
-  const articleLimit = parseInt(document.getElementById('article-limit').value);
-  const minScore = parseFloat(document.getElementById('min-score').value);
-
-  // Validation rules
-  const errors = [];
-
-  if (interestTags.length === 0) {
-    errors.push('Please select at least one interest tag');
+  // Add pipeline statistics if available
+  if (data.stats) {
+    html += '<div class="hn-separator"></div>';
+    html += '<div class="hn-section-title">Pipeline Statistics</div>';
+    html += `<div>Fetched: ${data.stats.stories_fetched} | `;
+    html += `Extracted: ${data.stats.articles_extracted} | `;
+    html += `Summarized: ${data.stats.articles_summarized} | `;
+    html += `Scored: ${data.stats.articles_scored} | `;
+    html += `Returned: ${data.stats.articles_returned}</div>`;
+    html += `<div>Time: ${(data.stats.generation_time_ms / 1000).toFixed(1)}s</div>`;
   }
 
-  if (storyCount < 10 || storyCount > 100) {
-    errors.push('Story count must be between 10 and 100');
-  }
-
-  if (articleLimit < 1 || articleLimit > 50) {
-    errors.push('Article limit must be between 1 and 50');
-  }
-
-  if (minScore < 0 || minScore > 1) {
-    errors.push('Minimum score must be between 0.0 and 1.0');
-  }
-
-  // Display errors
-  if (errors.length > 0) {
-    alert('Please fix the following errors:\n\n' + errors.join('\n'));
-    return false;
-  }
-
-  return true;
-}
-
-// Attach to form
-document.getElementById('digest-form').addEventListener('submit', (e) => {
-  if (!validateForm()) {
-    e.preventDefault();
-  }
-});
-```
-
-### Collapsible Relevance Reason
-
-```javascript
-/**
- * Toggle relevance reason visibility
- */
-function toggleReason(storyId) {
-  const reasonDiv = document.getElementById(`reason-${storyId}`);
-  const button = event.currentTarget;
-
-  const isHidden = reasonDiv.classList.contains('hidden');
-
-  if (isHidden) {
-    reasonDiv.classList.remove('hidden');
-    reasonDiv.setAttribute('aria-hidden', 'false');
-    button.setAttribute('aria-expanded', 'true');
-    button.textContent = 'Hide reason ↑';
-  } else {
-    reasonDiv.classList.add('hidden');
-    reasonDiv.setAttribute('aria-hidden', 'true');
-    button.setAttribute('aria-expanded', 'false');
-    button.textContent = 'Why relevant? ↓';
-  }
+  html += '</div>';
+  resultsDiv.innerHTML = html;
 }
 ```
 
@@ -1082,60 +1169,225 @@ function toggleReason(storyId) {
 
 ## Styling Strategy
 
-### Tailwind CSS Configuration
+### Tailwind CSS with HN Theme
 
-**File**: `src/hn_herald/static/css/styles.css`
+**Input File**: `src/hn_herald/static/css/input.css`
+**Output File**: `src/hn_herald/static/css/styles.css` (compiled)
+
+The styling uses a combination of:
+1. **Compiled Tailwind CSS** for utility classes
+2. **HN-style custom CSS classes** for form elements and layout
+3. **CSS Custom Properties** for theming
+4. **DaisyUI components** for enhanced UI elements
+
+### Theme System (CSS Custom Properties)
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Custom Components */
-@layer components {
-  /* Button Styles */
-  .btn-primary {
-    @apply w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg;
-    @apply hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
-    @apply transition-colors duration-200;
-    @apply disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .btn-secondary {
-    @apply px-4 py-2 border border-gray-300 rounded-lg text-gray-700;
-    @apply hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500;
-    @apply transition-colors duration-200;
-  }
-
-  /* Input Styles */
-  .input-field {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg;
-    @apply focus:ring-2 focus:ring-blue-500 focus:border-transparent;
-    @apply disabled:bg-gray-100 disabled:cursor-not-allowed;
-  }
-
-  /* Card Styles */
-  .card {
-    @apply bg-white rounded-lg shadow-md p-6;
-    @apply hover:shadow-lg transition-shadow duration-200;
-  }
-
-  /* Tag Styles */
-  .tag {
-    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm;
-  }
-
-  .tag-selected {
-    @apply tag bg-blue-100 text-blue-800;
-  }
-
-  .tag-suggestion {
-    @apply tag border border-gray-300 text-gray-700;
-    @apply hover:bg-blue-50 hover:border-blue-500 transition-colors;
-  }
+/* Default HN Theme */
+:root {
+  --primary-color: #ff6600;
+  --bg-color: #f6f6ef;
+  --text-color: #000000;
+  --secondary-color: #828282;
+  --border-color: #d4d4cc;
+  --header-bg: #ff6600;
+  --header-text: #000000;
+  --input-bg: #ffffff;
+  --selected-bg: #ffffff;
+  --button-bg: #ff6600;
+  --button-text: #ffffff;
+  --button-hover: #ea580c;
+  --loading-border: #ff6600;
 }
 
-/* HTMX Loading Indicator */
+/* Ocean Theme */
+[data-theme="ocean"] {
+  --primary-color: #006d77;
+  --bg-color: #e0f2f1;
+  --header-bg: #00838f;
+  --header-text: #ffffff;
+  --button-bg: #006d77;
+  --button-hover: #00555d;
+  /* ... other overrides */
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+  --primary-color: #ffa726;
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --header-bg: #0a0a0a;
+  --header-text: #e0e0e0;
+  --input-bg: #2a2a2a;
+  --button-bg: #ffa726;
+  --button-text: #000000;
+  /* ... other overrides */
+}
+```
+
+### HN-Style Custom Classes
+
+```css
+/* Base styles */
+body {
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 10pt;
+  line-height: 1.4;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Header */
+.hn-header {
+  background-color: var(--header-bg);
+  padding: 4px 8px;
+  font-size: 10pt;
+}
+
+/* Container */
+.hn-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 8px;
+  background-color: var(--bg-color);
+}
+
+/* Section Title */
+.hn-section-title {
+  font-weight: bold;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-size: 10pt;
+  color: var(--text-color);
+}
+
+/* Tag Links */
+.hn-tag-link {
+  color: var(--secondary-color);
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 10pt;
+}
+.hn-tag-link:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* Selected Tags Container */
+.hn-selected-tags {
+  border: 1px solid var(--border-color);
+  background-color: var(--selected-bg);
+  padding: 6px 8px;
+  margin: 4px 0 8px 0;
+  min-height: 24px;
+  font-size: 10pt;
+}
+
+/* Inputs */
+.hn-input {
+  border: 1px solid var(--border-color);
+  padding: 4px 6px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 10pt;
+  font-family: Verdana, Geneva, sans-serif;
+}
+.hn-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* Selects */
+.hn-select {
+  border: 1px solid var(--border-color);
+  padding: 4px 6px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 10pt;
+  font-family: Verdana, Geneva, sans-serif;
+}
+
+/* Primary Button */
+.hn-button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 6px 16px;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 10pt;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 12px 0;
+}
+.hn-button:hover {
+  background-color: var(--button-hover);
+}
+
+/* Small Button */
+.hn-button-small {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 4px 8px;
+  font-family: Verdana, Geneva, sans-serif;
+  font-size: 9pt;
+  cursor: pointer;
+}
+
+/* Loading Spinner */
+.hn-loading {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-radius: 50%;
+  border-top-color: var(--loading-border);
+  animation: spinner 1s ease-in-out infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
+}
+
+/* Options Layout */
+.hn-options {
+  margin: 12px 0;
+  font-size: 10pt;
+}
+.hn-options label {
+  color: var(--secondary-color);
+  margin-right: 4px;
+}
+.hn-options input,
+.hn-options select {
+  margin-right: 12px;
+}
+
+/* Separators */
+.hn-separator {
+  border-top: 1px solid var(--border-color);
+  margin: 12px 0;
+}
+
+/* Footer */
+.hn-footer {
+  font-size: 9pt;
+  color: var(--secondary-color);
+  text-align: center;
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 16px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--bg-color);
+}
+```
+
+### HTMX Loading Indicator (Fallback)
+
+```css
 .htmx-indicator {
   display: none;
 }
@@ -1143,45 +1395,6 @@ function toggleReason(storyId) {
 .htmx-request .htmx-indicator,
 .htmx-request.htmx-indicator {
   display: flex;
-}
-
-/* Custom Utilities */
-@layer utilities {
-  /* Touch targets (min 48px) */
-  .touch-target {
-    @apply min-h-[48px] min-w-[48px];
-  }
-
-  /* Safe area insets for mobile */
-  .safe-area-inset-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* Focus visible (keyboard only) */
-  .focus-visible-only:focus:not(:focus-visible) {
-    outline: none;
-  }
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-
-  .article-card {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
 }
 ```
 
@@ -1242,10 +1455,12 @@ body { @apply text-base leading-relaxed; }
 
 **Test File**: `tests/e2e/test_web_interface.py`
 
+**Note**: Tests should account for the SSE-based implementation using `generateDigest()` instead of form submission.
+
 **Test Cases**:
 
 ```python
-"""E2E tests for HTMX web interface."""
+"""E2E tests for HN Herald web interface."""
 
 import pytest
 from playwright.sync_api import Page, expect
@@ -1261,24 +1476,21 @@ class TestWebInterface:
         # Check title
         expect(page).to_have_title("HN Herald - AI-Powered HackerNews Digest")
 
-        # Check header
-        expect(page.locator("h1")).to_contain_text("HN Herald")
+        # Check header (HN-style)
+        expect(page.locator(".hn-header")).to_be_visible()
 
         # Check form exists
         expect(page.locator("#digest-form")).to_be_visible()
 
-        # Check submit button
-        expect(page.locator("button[type='submit']")).to_be_visible()
+        # Check generate button (onclick, not submit)
+        expect(page.locator("button.hn-button")).to_be_visible()
+
+        # Check theme switcher
+        expect(page.locator("#theme-switcher")).to_be_visible()
 
     def test_form_fields_present(self, page: Page):
         """Test that all form fields are present and functional."""
         page.goto("http://localhost:8000/")
-
-        # Interest tags input
-        expect(page.locator("#interest-tags-input")).to_be_visible()
-
-        # Disinterest tags input
-        expect(page.locator("#disinterest-tags-input")).to_be_visible()
 
         # Story type select
         expect(page.locator("#story-type")).to_be_visible()
@@ -1292,98 +1504,126 @@ class TestWebInterface:
         # Min score input
         expect(page.locator("#min-score")).to_have_value("0.3")
 
-    def test_add_interest_tag(self, page: Page):
-        """Test adding an interest tag."""
+        # Interest tags selected container
+        expect(page.locator("#interest-tags-selected")).to_be_visible()
+
+    def test_add_interest_tag_via_link(self, page: Page):
+        """Test adding an interest tag by clicking predefined link."""
         page.goto("http://localhost:8000/")
 
-        # Type and add tag
-        page.locator("#interest-tags-input").fill("python")
-        page.locator("#interest-tags-input").press("Enter")
+        # Click predefined tag link (HN-style anchor)
+        page.locator("a.hn-tag-link", has_text="Python").first.click()
 
-        # Verify tag appears
-        expect(page.locator("#interest-tags-selected")).to_contain_text("python")
+        # Verify tag appears in selected area
+        expect(page.locator("#interest-tags-selected")).to_contain_text("Python")
 
         # Verify hidden input updated
-        expect(page.locator("#interest-tags-hidden")).to_have_value("python")
+        expect(page.locator("#interest-tags-hidden")).to_have_value("Python")
 
-    def test_remove_interest_tag(self, page: Page):
-        """Test removing an interest tag."""
+    def test_add_custom_tag(self, page: Page):
+        """Test adding a custom interest tag."""
         page.goto("http://localhost:8000/")
 
-        # Add tag
-        page.locator("#interest-tags-input").fill("python")
-        page.locator("#interest-tags-input").press("Enter")
+        # Type custom tag in input
+        page.locator("#custom-interest-tag").fill("rust")
+        page.locator("#custom-interest-tag").press("Enter")
 
-        # Remove tag
-        page.locator("button[aria-label='Remove python']").click()
+        # Verify tag appears
+        expect(page.locator("#interest-tags-selected")).to_contain_text("rust")
 
-        # Verify tag removed
-        expect(page.locator("#interest-tags-selected")).not_to_contain_text("python")
-
-    def test_predefined_tag_click(self, page: Page):
-        """Test clicking a predefined tag suggestion."""
+    def test_remove_all_tags(self, page: Page):
+        """Test removing all tags with [remove all] link."""
         page.goto("http://localhost:8000/")
 
-        # Click predefined tag
-        page.locator("button[data-tag='Python']").click()
+        # Add a tag first
+        page.locator("a.hn-tag-link", has_text="Python").first.click()
 
-        # Verify tag added
-        expect(page.locator("#interest-tags-selected")).to_contain_text("Python")
+        # Click [remove all]
+        page.locator("#interest-tags-selected a", has_text="remove all").click()
+
+        # Verify tags cleared
+        expect(page.locator("#interest-tags-selected")).to_contain_text("(none)")
+
+    def test_theme_switching(self, page: Page):
+        """Test theme switching functionality."""
+        page.goto("http://localhost:8000/")
+
+        # Click ocean theme
+        page.locator("#theme-switcher a", has_text="ocean").click()
+
+        # Verify data-theme attribute
+        expect(page.locator("html")).to_have_attribute("data-theme", "ocean")
+
+        # Click dark theme
+        page.locator("#theme-switcher a", has_text="dark").click()
+        expect(page.locator("html")).to_have_attribute("data-theme", "dark")
 
     def test_profile_persistence(self, page: Page):
         """Test that profile is saved to localStorage."""
         page.goto("http://localhost:8000/")
 
         # Add interest tag
-        page.locator("#interest-tags-input").fill("ai")
-        page.locator("#interest-tags-input").press("Enter")
+        page.locator("a.hn-tag-link", has_text="Python").first.click()
 
         # Change story count
         page.locator("#story-count").fill("50")
 
-        # Trigger save (before form submission)
+        # Trigger save
         page.evaluate("saveProfile()")
 
         # Reload page
         page.reload()
 
         # Verify persistence
-        expect(page.locator("#interest-tags-selected")).to_contain_text("ai")
+        expect(page.locator("#interest-tags-selected")).to_contain_text("Python")
         expect(page.locator("#story-count")).to_have_value("50")
 
     @pytest.mark.slow
-    def test_digest_generation_flow(self, page: Page):
-        """Test complete digest generation flow."""
-        page.goto("http://localhost:8000/")
+    def test_digest_generation_with_mock(self, page: Page):
+        """Test complete digest generation flow with mock mode."""
+        page.goto("http://localhost:8000/?mock=true")
 
-        # Fill form
-        page.locator("#interest-tags-input").fill("python")
-        page.locator("#interest-tags-input").press("Enter")
+        # Add interest tag
+        page.locator("a.hn-tag-link", has_text="Python").first.click()
 
-        page.locator("#story-count").fill("10")  # Small count for speed
+        page.locator("#story-count").fill("10")
         page.locator("#article-limit").fill("5")
 
-        # Submit form
-        page.locator("button[type='submit']").click()
+        # Click generate button (calls generateDigest())
+        page.locator("button.hn-button", has_text="Generate Digest").click()
 
         # Wait for loading indicator
         expect(page.locator("#loading")).to_be_visible()
 
-        # Wait for results (timeout 60s for API call)
-        expect(page.locator("#results")).to_be_visible(timeout=60000)
+        # Wait for results (mock mode is faster)
+        expect(page.locator("#results .hn-digest")).to_be_visible(timeout=30000)
 
         # Verify articles displayed
-        expect(page.locator(".article-card").first).to_be_visible()
+        expect(page.locator("#results .hn-article").first).to_be_visible()
 
-        # Verify article has required elements
-        first_card = page.locator(".article-card").first
-        expect(first_card.locator("h2")).to_be_visible()  # Title
-        expect(first_card.locator("a[href*='news.ycombinator.com']")).to_be_visible()  # HN link
+    def test_cancel_digest_generation(self, page: Page):
+        """Test canceling digest generation."""
+        page.goto("http://localhost:8000/")
+
+        page.locator("a.hn-tag-link", has_text="Python").first.click()
+
+        # Start generation
+        page.locator("button.hn-button", has_text="Generate Digest").click()
+
+        # Wait for loading
+        expect(page.locator("#loading")).to_be_visible()
+
+        # Click cancel button
+        page.locator("button.hn-button-small", has_text="Cancel").click()
+
+        # Verify loading hidden and button restored
+        expect(page.locator("#loading")).to_be_hidden()
+        expect(page.locator("button.hn-button", has_text="Generate Digest")).to_be_visible()
 
     def test_error_display(self, page: Page):
         """Test error handling when API fails."""
         # Mock API error
-        page.route("**/api/v1/digest", lambda route: route.fulfill(
+        page.route("**/api/v1/digest/stream", lambda route: route.fulfill(
             status=500,
             body='<div class="error-state">Server error</div>'
         ))

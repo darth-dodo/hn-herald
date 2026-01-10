@@ -276,10 +276,9 @@ erDiagram
     UserProfile {
         list interest_tags
         list disinterest_tags
-        list custom_tags
-        int min_score
+        float min_score
         int max_articles
-        string fetch_type
+        StoryType fetch_type
         int fetch_count
     }
 
@@ -413,7 +412,7 @@ class ScoredArticle(BaseModel):
 ```python
 class Digest(BaseModel):
     articles: list[ScoredArticle]      # Ranked and limited
-    generated_at: datetime             # ISO 8601 timestamp
+    timestamp: datetime                # ISO 8601 timestamp
     stats: DigestStats                 # Pipeline statistics
 
 class DigestStats(BaseModel):
@@ -870,7 +869,6 @@ graph TB
     LA -.-> LS
 
     style LS fill:#f9f,stroke:#333
-    style Cache fill:#bbf,stroke:#333
     style Parser fill:#bfb,stroke:#333
 ```
 
@@ -1007,7 +1005,7 @@ class Settings(BaseSettings):
 1. **Article fetch fails** → Mark as unavailable, continue with others
 2. **LLM fails** → Return article without summary, note error
 3. **All articles fail** → Show error message with retry option
-4. **HN API down** → Show cached results if available, error message
+4. **HN API down** → Show error message with retry option
 
 ### Retry Strategy
 

@@ -132,7 +132,7 @@ class ArticleSummary(BaseModel):
         max_length=5,
     )
     tech_tags: list[str] = Field(
-        ...,
+        default_factory=list,
         description="Relevant technology or topic tags (e.g., 'Python', 'AI', 'Security')",
         max_length=10,
     )
@@ -198,21 +198,25 @@ class SummarizedArticle(BaseModel):
         description="Error details if summarization failed",
     )
 
+    @computed_field
     @property
     def has_summary(self) -> bool:
         """Check if article has a valid summary."""
         return self.summary_data is not None
 
+    @computed_field
     @property
     def display_summary(self) -> str | None:
         """Get summary text for display."""
         return self.summary_data.summary if self.summary_data else None
 
+    @computed_field
     @property
     def display_key_points(self) -> list[str]:
         """Get key points for display."""
         return self.summary_data.key_points if self.summary_data else []
 
+    @computed_field
     @property
     def display_tags(self) -> list[str]:
         """Get tech tags for display."""

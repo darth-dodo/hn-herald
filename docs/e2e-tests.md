@@ -2,11 +2,16 @@
 
 Manual E2E test scenarios using Playwright MCP. Run these interactively with Claude Code.
 
+**Note**: These are manual test scenarios designed to be run interactively with Claude Code using Playwright MCP, not automated test files. For automated unit and integration tests, see the `tests/` directory.
+
 ## Prerequisites
 
 ```bash
-# Ensure the dev server is running
-uv run uvicorn hn_herald.main:app --reload --port 8000
+# Ensure the dev server is running (use Makefile target)
+make dev
+
+# Or run directly with uvicorn
+uv run uvicorn hn_herald.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ---

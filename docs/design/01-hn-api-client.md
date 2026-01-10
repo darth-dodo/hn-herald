@@ -196,18 +196,24 @@ class Story(BaseModel):
     Represents a story fetched from the HN API with all metadata
     needed for digest generation.
     """
-    id: int = Field(..., description="Unique story ID")
+    model_config = {
+        "frozen": False,
+        "extra": "ignore",  # Ignore unknown fields from API
+        "str_strip_whitespace": True,
+    }
+
+    id: int = Field(..., description="Unique story ID from HackerNews")
     title: str = Field(..., description="Story title")
-    url: str | None = Field(None, description="External article URL")
+    url: str | None = Field(default=None, description="External article URL")
     score: int = Field(..., ge=0, description="HN upvote score")
     by: str = Field(..., description="Author username")
     time: int = Field(..., description="Unix timestamp of creation")
-    descendants: int = Field(0, ge=0, description="Total comment count")
-    type: str = Field("story", description="Item type")
-    kids: list[int] = Field(default_factory=list, description="Comment IDs")
-    text: str | None = Field(None, description="HTML content for Ask HN/jobs")
-    dead: bool = Field(False, description="Is story dead")
-    deleted: bool = Field(False, description="Is story deleted")
+    descendants: int | None = Field(default=None, ge=0, description="Total comment count")
+    type: str = Field(default="story", description="Item type from HN API")
+    kids: list[int] = Field(default_factory=list, description="Child comment IDs")
+    text: str | None = Field(default=None, description="HTML content for Ask HN/jobs")
+    dead: bool | None = Field(default=None, description="True if story is dead/killed")
+    deleted: bool | None = Field(default=None, description="True if story is deleted")
 
     @computed_field
     @property
@@ -219,12 +225,7 @@ class Story(BaseModel):
     @property
     def has_external_url(self) -> bool:
         """Check if story has an external URL."""
-        return self.url is not None and len(self.url) > 0
-
-    model_config = {
-        "frozen": False,
-        "extra": "ignore",  # Ignore unknown fields from API
-    }
+        return bool(self.url)
 ```
 
 ### HNClientError
@@ -242,10 +243,6 @@ class HNAPIError(HNClientError):
 
 class HNTimeoutError(HNClientError):
     """Request timeout error."""
-    pass
-
-class HNRateLimitError(HNClientError):
-    """Rate limit exceeded error."""
     pass
 ```
 
@@ -305,18 +302,18 @@ class HNClient:
 
     def __init__(
         self,
-        base_url: str = "https://hacker-news.firebaseio.com/v0",
-        timeout: int = 30,
+        base_url: str | None = None,
+        timeout: int | None = None,
         max_retries: int = 3,
         max_concurrent: int = 10,
     ) -> None:
         """Initialize HN client.
 
         Args:
-            base_url: HN API base URL
-            timeout: Request timeout in seconds
-            max_retries: Maximum retry attempts
-            max_concurrent: Maximum concurrent requests
+            base_url: HN API base URL. Defaults to settings value.
+            timeout: Request timeout in seconds. Defaults to settings value.
+            max_retries: Maximum retry attempts for transient failures.
+            max_concurrent: Maximum concurrent requests for batch operations.
         """
         ...
 
@@ -331,20 +328,20 @@ class HNClient:
     async def fetch_story_ids(
         self,
         story_type: StoryType,
-        limit: int | None = None,
+        limit: int = 30,
     ) -> list[int]:
         """Fetch story IDs for a given story type.
 
         Args:
-            story_type: Type of stories to fetch
-            limit: Maximum number of IDs to return (None = all)
+            story_type: Type of stories to fetch (TOP, NEW, BEST, etc.).
+            limit: Maximum number of IDs to return.
 
         Returns:
-            List of story IDs sorted by HN ranking
+            List of story IDs sorted by HN ranking.
 
         Raises:
-            HNTimeoutError: Request timed out
-            HNAPIError: Non-2xx response from API
+            HNTimeoutError: If the request times out.
+            HNAPIError: If the API returns a non-2xx status code.
         """
         ...
 
@@ -352,14 +349,14 @@ class HNClient:
         """Fetch a single story by ID.
 
         Args:
-            story_id: HN story ID
+            story_id: HN story ID.
 
         Returns:
-            Story object or None if story is dead/deleted
+            Story object or None if story is dead/deleted or not found.
 
         Raises:
-            HNTimeoutError: Request timed out
-            HNAPIError: Non-2xx response from API
+            HNTimeoutError: If the request times out.
+            HNAPIError: If the API returns a non-2xx status code.
         """
         ...
 
@@ -371,17 +368,21 @@ class HNClient:
     ) -> list[Story]:
         """Fetch multiple stories with parallel requests.
 
+        Fetches story IDs first, then fetches each story in parallel
+        with rate limiting. Filters by minimum score and sorts by score
+        descending.
+
         Args:
-            story_type: Type of stories to fetch
-            limit: Maximum stories to return
-            min_score: Minimum HN score filter
+            story_type: Type of stories to fetch (TOP, NEW, BEST, etc.).
+            limit: Maximum stories to return after filtering.
+            min_score: Minimum HN score filter.
 
         Returns:
-            List of Story objects filtered and sorted by HN ranking
+            List of Story objects filtered by min_score and sorted by score descending.
 
         Raises:
-            HNTimeoutError: Request timed out
-            HNAPIError: Non-2xx response from API
+            HNTimeoutError: If requests time out.
+            HNAPIError: If the API returns a non-2xx status code.
         """
         ...
 ```
