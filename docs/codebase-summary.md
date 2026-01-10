@@ -1,6 +1,6 @@
 # HN Herald: Crash Course
 
-**Version**: 1.1 | **Tests**: 406 | **Coverage**: 70%+ | **Date**: January 2026
+**Version**: 1.1 | **Tests**: 469 | **Coverage**: 70%+ | **Date**: January 2026
 
 > 📚 **Enhanced Edition**: Includes Troubleshooting, Extension Guides, Cost Tracking, Operational Runbooks, and ADRs
 
@@ -35,7 +35,7 @@ This crash course documents everything about **HN Herald** — a privacy-first A
 - ⚠️ LLM caching: Not implemented (config exists but unused)
 - ✅ SSE streaming for real-time progress updates
 - ✅ Privacy-first: no tracking, localStorage only
-- ✅ 406 tests with 70%+ coverage, strict typing
+- ✅ 469 tests with 70%+ coverage, strict typing
 - ✅ 3 themes: HN Orange, Ocean Blue, Dark Mode
 
 ---
@@ -232,7 +232,7 @@ hn-herald/
 │       ├── css/styles.css         # Tailwind output
 │       └── js/app.js              # SSE + tag management
 │
-├── tests/                         # 406 tests
+├── tests/                         # 469 tests
 │   ├── unit/graph/nodes/
 │   ├── integration/
 │   ├── test_models/
@@ -869,7 +869,7 @@ class Settings(BaseSettings):
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'fontSize': '14px'}}}%%
 pie showData
-    title Test Distribution (406 tests)
+    title Test Distribution (469 tests)
     "Unit Tests (Models, Services)" : 85
     "Node Tests (Pipeline)" : 10
     "Integration Tests (API)" : 5
@@ -956,7 +956,7 @@ git add . && git commit
 |---------|-------------|
 | `make install` | Install Python deps (uv sync) |
 | `make dev` | Run dev server with hot reload |
-| `make test` | Run all 406 tests |
+| `make test` | Run all 469 tests |
 | `make test-cov` | Run tests with coverage |
 | `make lint` | Check code style (ruff) |
 | `make format` | Auto-format code |
@@ -1952,5 +1952,5 @@ flowchart LR
 
 ---
 
-*Crash Course v1.0 — HN Herald (406 tests, 70%+ coverage, LangGraph Pipeline)*
+*Crash Course v1.0 — HN Herald (469 tests, 70%+ coverage, LangGraph Pipeline)*
 *Enhanced with: Troubleshooting, Extension Guide, Cost Tracking, Operational Runbook, ADRs*

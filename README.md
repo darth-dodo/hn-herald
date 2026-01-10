@@ -139,7 +139,7 @@ Built with modern, production-ready tools:
 ```bash
 make install     # Install dependencies
 make dev         # Start dev server with hot reload
-make test        # Run test suite (469 tests)
+make test        # Run test suite
 make lint        # Run linting
 make typecheck   # Run type checking
 ```
@@ -158,7 +158,7 @@ make typecheck   # Run type checking
 | Web UI | ✅ Complete | 8 | Vanilla JS + Tailwind interface with themes |
 | Rate Limiting | ✅ Complete | 30 | Privacy-first global rate limiting (30 req/min) |
 
-**Total Test Coverage**: 469 tests
+**Test Coverage**: 70%+ with comprehensive test suite
 
 ### Documentation
 
