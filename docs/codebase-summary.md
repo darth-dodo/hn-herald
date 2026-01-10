@@ -654,7 +654,7 @@ sequenceDiagram
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
 | GET | `/` | Main page UI |
-| GET | `/api/health` | Health check |
+| GET | `/api/v1/health` | Health check |
 | POST | `/api/v1/digest` | Generate digest (JSON) |
 | POST | `/api/v1/digest/stream` | Generate digest (SSE) |
 
@@ -1129,7 +1129,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-healthcheckPath = "/api/health"
+healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
@@ -1158,7 +1158,7 @@ flowchart LR
     subgraph Railway["Railway"]
         TOML[railway.toml]
         WEB[Web Service]
-        HEALTH[/api/health]
+        HEALTH[/api/v1/health]
     end
 
     CODE --> GIT -->|push main| TOML
@@ -1203,7 +1203,7 @@ src/hn_herald/models/*.py                # Pydantic models
 
 ```bash
 # Health check
-curl http://localhost:8000/api/health
+curl http://localhost:8000/api/v1/health
 
 # Generate digest (JSON)
 curl -X POST http://localhost:8000/api/v1/digest \
@@ -1708,7 +1708,7 @@ mindmap
 │ □ Environment variables set (ANTHROPIC_API_KEY)                 │
 │ □ HN_HERALD_ENV=production                                      │
 │ □ LLM cache configured (sqlite recommended)                     │
-│ □ Health endpoint responding (/api/health)                      │
+│ □ Health endpoint responding (/api/v1/health)                      │
 │ □ SSL/TLS configured (HTTPS only)                              │
 │ □ Rate limiting enabled (if high traffic expected)             │
 │ □ Logging configured (structured JSON recommended)              │
@@ -1720,14 +1720,14 @@ mindmap
 
 ```bash
 # Simple health check
-curl -f http://localhost:8000/api/health || exit 1
+curl -f http://localhost:8000/api/v1/health || exit 1
 
 # With timeout
-timeout 5 curl -sf http://localhost:8000/api/health
+timeout 5 curl -sf http://localhost:8000/api/v1/health
 
 # Comprehensive health check script
 #!/bin/bash
-HEALTH=$(curl -s http://localhost:8000/api/health)
+HEALTH=$(curl -s http://localhost:8000/api/v1/health)
 STATUS=$(echo $HEALTH | jq -r '.status')
 if [ "$STATUS" != "healthy" ]; then
     echo "ALERT: Health check failed!"

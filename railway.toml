@@ -21,7 +21,7 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 # Health check configuration
-healthcheckPath = "/api/health"
+healthcheckPath = "/api/v1/health"
 healthcheckTimeout = 300
 
 # Restart policy on failure
