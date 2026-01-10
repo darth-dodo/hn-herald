@@ -64,6 +64,7 @@ Built for on-the-go reading with:
 - Three beautiful themes (HN Orange, Ocean, Dark)
 - Real-time loading indicators with pipeline stage updates
 - HN fun facts while you wait
+- Cancel button to abort long-running requests
 
 ## Quick Start
 
@@ -108,7 +109,9 @@ HackerNews API --> LangGraph Pipeline --> Your Browser
 6. **Rank**: Sorts by final score and limits to max_articles
 7. **Format**: Assembles digest with stats and metadata
 
-**Real-time Progress**: Server-Sent Events (SSE) stream pipeline stages to the UI with animated loading indicators and HN fun facts.
+**Real-time Progress**: Server-Sent Events (SSE) stream pipeline stages to the UI with animated loading indicators and HN fun facts. Users can cancel in-progress requests using the Cancel button, which gracefully aborts the stream via AbortController.
+
+**Digest Statistics**: Each digest includes metrics showing total time, articles processed, filter pass rates, and summarization success rates.
 
 ## Privacy First
 
@@ -116,7 +119,8 @@ HackerNews API --> LangGraph Pipeline --> Your Browser
 - **No tracking**: Zero analytics, no behavior logging
 - **Local storage**: Your preferences never leave your browser
 - **Ephemeral processing**: Article content processed in real-time, not stored
-- **Global rate limiting**: API protection without per-IP tracking (30 req/min)
+- **Global rate limiting**: API protection without per-IP tracking (30 requests per 60 seconds)
+- **Cancellable requests**: Abort long-running digests anytime with the Cancel button
 
 ## Technology
 

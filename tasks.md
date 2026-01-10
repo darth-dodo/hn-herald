@@ -11,6 +11,9 @@
 | test_coverage | 469 tests, 91% coverage |
 
 ### Recent Changes (Jan 2026)
+- **Cancel button**: Added user-facing Cancel button using AbortController for graceful stream abort
+- **Pipeline metrics fix**: Corrected misleading metrics (removed "Processing rate", renamed "Generation time" → "Total time")
+- **SSE stage detection fix**: Fixed stage detection logic using state comparison instead of naive node detection
 - **Rate limiting**: Global rate limiting (30 req/60s) on digest endpoints (privacy-first, no per-IP tracking)
 - **Batch summarization chunking**: Fixed max_tokens truncation by chunking articles (batch_size=5)
 - **SSE streaming**: Real-time pipeline progress via `/api/v1/digest/stream`
@@ -107,6 +110,9 @@ We follow **Extreme Programming (XP)** principles:
 | 6 | Loading screen with fun facts | DONE | UX polish | Animated spinner + HN facts |
 | 7 | Theme system | DONE | 3 themes | HN Orange, Ocean, Dark |
 | 8 | Fix batch summarization | DONE | 100% success | Chunked batches (size=5) |
+| 9 | Cancel button | DONE | AbortController | Graceful stream cancellation |
+| 10 | Fix SSE stage detection | DONE | State comparison | Correct node identification |
+| 11 | Fix pipeline metrics | DONE | Accurate stats | Total time, filter pass rate |
 
 ---
 

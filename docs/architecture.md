@@ -176,7 +176,7 @@ hn-herald/
 │       │   ├── __init__.py
 │       │   └── progress.py          # HTMX progress callbacks
 │       │
-│       ├── rate_limit.py            # Rate limiting decorator ✅
+│       ├── rate_limit.py            # Privacy-first global rate limiting (30 req/60s) ✅
 │       │
 │       └── models/
 │           ├── __init__.py
@@ -451,10 +451,42 @@ class DigestStats(BaseModel):
 | Method | Path                  | Description                   | Rate Limit |
 | ------ | --------------------- | ----------------------------- | ---------- |
 | GET    | `/api/v1/health`      | Health check                  | None       |
-| POST   | `/api/v1/digest`      | Generate digest (JSON)        | 30/min     |
-| POST   | `/api/v1/digest/stream` | SSE stream with progress    | 30/min     |
+| POST   | `/api/v1/digest`      | Generate digest (JSON)        | 30/60s     |
+| POST   | `/api/v1/digest/stream` | SSE stream with progress    | 30/60s     |
 
-> **Rate Limiting**: Digest endpoints are rate-limited to 30 requests per 60 seconds (global, not per-IP) to protect Anthropic API quotas. See [design doc](design/07-rate-limiting.md).
+> **Rate Limiting**: Digest endpoints are rate-limited to 30 requests per 60 seconds (global, not per-IP) to protect Anthropic API quotas. Privacy-first design means no per-IP tracking. See [design doc](design/07-rate-limiting.md).
+
+### Cancellation Support
+
+The streaming endpoint supports graceful cancellation via AbortController:
+
+```javascript
+// Client-side cancellation
+const controller = new AbortController();
+fetch('/api/v1/digest/stream', { signal: controller.signal });
+// Later: controller.abort() to cancel
+```
+
+When cancelled, the stream closes gracefully without error messages. The UI resets to the ready state immediately.
+
+### Mock/Sandbox Mode
+
+For development and demos, a mock mode is available that simulates the full pipeline without API calls:
+
+```bash
+# Enable via query parameter
+curl -X POST 'http://localhost:8000/api/v1/digest/stream?mock=true' \
+  -H "Content-Type: application/json" \
+  -d '{"profile": {"interest_tags": ["python"]}}'
+```
+
+**Features**:
+- Realistic mock articles with varied tech topics (SQLite, Rust, PostgreSQL, etc.)
+- Simulated pipeline timing with SSE progress events
+- No Anthropic API key required
+- Useful for frontend development and UI testing
+
+**Implementation**: See `src/hn_herald/api/mocks.py` for the mock data generator.
 
 ### Server-Sent Events (SSE) Streaming
 

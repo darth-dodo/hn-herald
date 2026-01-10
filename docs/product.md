@@ -96,13 +96,22 @@ A **privacy-first**, personalized HackerNews digest that fetches top stories, su
 - Links to original article and HN comments
 - Generation timestamp and stats
 - Pull-to-refresh pattern
+- Cancel button to abort long-running requests (uses AbortController)
 
 ### F7: Generation Controls
 
 - Select story type (top/new/best/ask/show/job)
 - Adjust article count
-- Real-time generation status
+- Real-time generation status with SSE streaming
 - Error display for failed articles
+- Cancel button to abort in-progress generation
+
+### F8: Rate Limiting
+
+- Global rate limiting (30 requests per 60 seconds)
+- Privacy-first: no per-IP tracking
+- Returns HTTP 429 when limit exceeded
+- Protects Anthropic API quotas
 
 ---
 
@@ -131,7 +140,7 @@ Each session delivers a shippable increment:
 | **MVP-3** | LLM summarization | Get AI summaries | ✅ Complete |
 | **MVP-4** | Relevance scoring | Personalized ranking | ✅ Complete |
 | **MVP-5** | FastAPI endpoints | API is callable | ✅ API contract tests |
-| **MVP-6** | HTMX templates | Usable web UI | ✅ E2E smoke tests |
+| **MVP-6** | SSE + Web UI | Usable web UI | ✅ E2E smoke tests |
 | **MVP-7** | Tag system UI | Can select interests | ✅ Component tests |
 | **MVP-8** | Mobile polish | Works on phones | ✅ Lighthouse >90 |
 | **2.1** | Comment fetching | See discussions | ✅ API tests |
