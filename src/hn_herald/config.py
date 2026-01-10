@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     langchain_project: str = "hn-herald"
 
     # Caching Settings
+    # NOTE: These settings are defined but NOT currently used.
+    # The LLMService does not implement caching - see docs/design/03-llm-summarization.md
+    # for the planned cache implementation that was never built.
     llm_cache_type: Literal["sqlite", "memory", "none"] = "sqlite"
     llm_cache_ttl: int = 86400  # 24 hours in seconds
     cache_dir: str = ".cache"

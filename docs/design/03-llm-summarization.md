@@ -32,7 +32,7 @@ The LLM Summarization service generates AI-powered summaries of extracted articl
 | NFR-2 | Response time per article | < 5 seconds |
 | NFR-3 | Structured output via PydanticOutputParser | Required |
 | NFR-4 | LangSmith tracing support (optional) | Configurable |
-| NFR-5 | Caching support (SQLite or in-memory) | Configurable |
+| NFR-5 | Caching support (SQLite or in-memory) | **Not Implemented** |
 | NFR-6 | Rate limit handling with retry logic | Required |
 | NFR-7 | Graceful degradation on API errors | Required |
 | NFR-8 | Type safety with full type hints | Required |
@@ -53,7 +53,7 @@ flowchart LR
     subgraph Processing
         LLMService["LLMService<br/>(Claude wrapper)"]
         Parser["PydanticOutputParser<br/>(structured output)"]
-        Cache["LangChain Cache<br/>(SQLite/memory)"]
+        Cache["LangChain Cache<br/>(SQLite/memory)<br/>⚠️ NOT IMPLEMENTED"]
     end
 
     subgraph External
@@ -550,6 +550,8 @@ langchain_api_key: str | None = None
 langchain_project: str = "hn-herald"
 
 # Caching Settings (already present)
+# NOTE: These settings exist in config but are NOT used by LLMService.
+# Caching was designed but never implemented.
 llm_cache_type: Literal["sqlite", "memory", "none"] = "sqlite"
 llm_cache_ttl: int = 86400  # 24 hours
 cache_dir: str = ".cache"
@@ -575,7 +577,7 @@ LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=ls-...
 LANGCHAIN_PROJECT=hn-herald
 
-# Caching
+# Caching (NOT IMPLEMENTED - these env vars are defined but not functional)
 LLM_CACHE_TYPE=sqlite
 LLM_CACHE_TTL=86400
 
@@ -587,6 +589,8 @@ SUMMARIZATION_MAX_RETRIES=3
 ---
 
 ## Caching Strategy
+
+> **WARNING: NOT IMPLEMENTED**: The following cache implementation was designed but not built. The LLMService currently makes direct API calls without caching.
 
 ### Cache Implementation
 
@@ -612,13 +616,17 @@ def setup_llm_cache() -> None:
     # else: no caching
 ```
 
-### Cache Key Strategy
+### Cache Key Strategy (Planned)
+
+> **Note**: The following describes the planned cache key strategy, not current functionality.
 
 - **Key**: Hash of (model, prompt, temperature)
 - **TTL**: 24 hours for summaries (content doesn't change)
 - **Invalidation**: Manual clear via admin endpoint or cache file deletion
 
-### Cache Benefits
+### Cache Benefits (Planned)
+
+> **Note**: The following describes the expected benefits once caching is implemented.
 
 | Metric | Without Cache | With Cache |
 |--------|---------------|------------|
