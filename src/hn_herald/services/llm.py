@@ -185,6 +185,7 @@ class LLMService:
             batch_summaries = self._batch_parser.parse(batch_response)
             self._map_batch_results(articles_with_content, batch_summaries.summaries, results)
         except (LLMRateLimitError, LLMAPIError) as e:
+            logger.error("LLM API error during batch summarization: %s", e)
             self._fill_error_results(
                 articles_with_content, results, SummarizationStatus.API_ERROR, str(e)
             )

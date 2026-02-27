@@ -33,6 +33,13 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 
 
+def _ensure_cache_dir(cache_dir_path: str) -> None:
+    """Create cache directory if it doesn't exist."""
+    cache_dir = Path(cache_dir_path)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("Cache directory: %s", cache_dir.absolute())
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan manager for startup and shutdown events."""
@@ -44,9 +51,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     # Create cache directory if using SQLite cache
     # NOTE: Directory is created but LLMService does not implement caching yet
     if settings.llm_cache_type == "sqlite":
-        cache_dir = Path(settings.cache_dir)
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        logger.info(f"Cache directory: {cache_dir.absolute()}")
+        _ensure_cache_dir(settings.cache_dir)
 
     yield
 

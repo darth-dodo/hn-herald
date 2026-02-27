@@ -5,14 +5,14 @@ SummarizationStatus enum for tracking summarization outcomes, and exception
 classes for LLM service errors.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, computed_field, field_validator
 
 from hn_herald.models.article import Article
 
 
-class SummarizationStatus(str, Enum):
+class SummarizationStatus(StrEnum):
     """Status of article summarization.
 
     Tracks the outcome of attempting to summarize an article using an LLM.
