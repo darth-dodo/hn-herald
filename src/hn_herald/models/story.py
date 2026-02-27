@@ -5,12 +5,12 @@ for type-safe API calls. These models validate data from the HN Firebase API
 and provide computed properties for common operations.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, computed_field
 
 
-class StoryType(str, Enum):
+class StoryType(StrEnum):
     """Supported HN story types.
 
     Each type corresponds to a specific HN API endpoint that returns

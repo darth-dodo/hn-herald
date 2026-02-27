@@ -5,12 +5,12 @@ ExtractionStatus enum for tracking extraction outcomes. These models bridge
 the gap between HN stories and AI summarization.
 """
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, computed_field
 
 
-class ExtractionStatus(str, Enum):
+class ExtractionStatus(StrEnum):
     """Status of article content extraction.
 
     Tracks the outcome of attempting to extract content from a story URL.
