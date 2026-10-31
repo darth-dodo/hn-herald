@@ -276,5 +276,5 @@ extensions:
       url: 'https://hacker-news.firebaseio.com/v0'
       rate_limit: null
     - name: 'Anthropic'
-      model: 'claude-sonnet-4-20250514'
+      model: 'claude-haiku-4-5'
       env_var: 'ANTHROPIC_API_KEY'

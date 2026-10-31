@@ -356,14 +356,12 @@ class LLMService:
 
     Attributes:
         model: Claude model identifier.
-        temperature: LLM temperature setting.
         max_tokens: Maximum tokens per response.
     """
 
     def __init__(
         self,
         model: str | None = None,
-        temperature: float | None = None,
         max_tokens: int | None = None,
         cache: BaseCache | None = None,
     ) -> None:
@@ -371,7 +369,6 @@ class LLMService:
 
         Args:
             model: Claude model to use. Defaults to settings value.
-            temperature: Temperature for generation. Defaults to settings value.
             max_tokens: Max tokens per response. Defaults to settings value.
             cache: LangChain cache instance. If None, uses settings default.
         """
@@ -544,8 +541,7 @@ async def _invoke_with_retry(self, prompt: str) -> str:
 
 ```python
 # LLM Settings (already present)
-llm_model: str = "claude-sonnet-4-20250514"
-llm_temperature: float = 0.0
+llm_model: str = "claude-sonnet-4-6"
 llm_max_tokens: int = 4096
 
 # LangSmith Settings (already present)
@@ -572,8 +568,7 @@ summarization_max_retries: int = 3
 ANTHROPIC_API_KEY=sk-ant-...
 
 # LLM Configuration
-LLM_MODEL=claude-sonnet-4-20250514
-LLM_TEMPERATURE=0
+LLM_MODEL=claude-sonnet-4-6
 LLM_MAX_TOKENS=4096
 
 # LangSmith (optional)
@@ -624,7 +619,7 @@ def setup_llm_cache() -> None:
 
 > **Note**: The following describes the planned cache key strategy, not current functionality.
 
-- **Key**: Hash of (model, prompt, temperature)
+- **Key**: Hash of (model, prompt)
 - **TTL**: 24 hours for summaries (content doesn't change)
 - **Invalidation**: Manual clear via admin endpoint or cache file deletion
 

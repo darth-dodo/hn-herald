@@ -642,8 +642,8 @@ from hn_herald.models.summary import (
 class LLMService:
     """LLM service for article summarization."""
 
-    def __init__(self, model: str = "claude-3-5-haiku-20241022"):
-        self.llm = ChatAnthropic(model=model, temperature=0)
+    def __init__(self, model: str = "claude-haiku-4-5"):
+        self.llm = ChatAnthropic(model=model)
 
     def summarize_articles_batch(
         self, articles: list[Article], batch_size: int | None = None
@@ -934,8 +934,7 @@ HN_HERALD_HOST=0.0.0.0
 HN_HERALD_PORT=8000
 
 # LLM Settings
-LLM_MODEL=claude-3-5-haiku-20241022
-LLM_TEMPERATURE=0
+LLM_MODEL=claude-haiku-4-5
 LLM_MAX_TOKENS=8192  # Increased for batch summarization
 
 # Fetching
@@ -960,8 +959,7 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
 
-    llm_model: str = "claude-3-5-haiku-20241022"
-    llm_temperature: float = 0
+    llm_model: str = "claude-haiku-4-5-20251001"
     llm_max_tokens: int = 8192  # Increased for batch summarization
 
     hn_api_timeout: int = 30

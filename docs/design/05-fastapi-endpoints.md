@@ -1549,8 +1549,7 @@ HN_HERALD_PORT=8000
 HN_HERALD_LOG_LEVEL=INFO
 
 # LLM
-LLM_MODEL=claude-sonnet-4-20250514
-LLM_TEMPERATURE=0.0
+LLM_MODEL=claude-sonnet-4-6
 
 # LangSmith (optional but recommended)
 LANGCHAIN_TRACING_V2=true
