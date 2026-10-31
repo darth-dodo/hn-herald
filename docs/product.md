@@ -92,8 +92,7 @@ A **privacy-first**, personalized HackerNews digest that fetches top stories, su
 - Extract 1-5 key points per article (configurable, typically 3)
 - Generate up to 10 tech/topic tags for categorization
 - Batch processing: 5 articles per LLM call (configurable via `summary_batch_size`)
-- Model: Claude 3.5 Haiku (`claude-3-5-haiku-20241022`)
-- Temperature: 0.0 for consistent output
+- Model: Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)
 - Max tokens: 8,192 per batch request
 - Retry logic with exponential backoff on rate limits
 - **Note**: LLM response caching is defined in config but not yet implemented

@@ -71,14 +71,12 @@ class LLMService:
     def __init__(
         self,
         model: str | None = None,
-        temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> None:
         """Initialize LLM service with optional config overrides."""
         settings = get_settings()
         self._client = ChatAnthropic(
             model=model or settings.llm_model,
-            temperature=temperature if temperature is not None else settings.llm_temperature,
             max_tokens=max_tokens or settings.llm_max_tokens,
             api_key=settings.anthropic_api_key,  # type: ignore[call-arg]
         )

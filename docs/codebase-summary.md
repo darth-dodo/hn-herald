@@ -832,8 +832,7 @@ class Settings(BaseSettings):
     port: int = 8000
 
     # LLM
-    llm_model: str = "claude-3-5-haiku-20241022"
-    llm_temperature: float = 0.0
+    llm_model: str = "claude-haiku-4-5-20251001"
     llm_max_tokens: int = 8192
 
     # Cache (config exists but not implemented in LLMService)
@@ -855,7 +854,7 @@ class Settings(BaseSettings):
 |----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | *required* | Claude API key |
 | `HN_HERALD_ENV` | development | Environment mode |
-| `HN_HERALD_LLM_MODEL` | claude-3-5-haiku-20241022 | LLM model |
+| `HN_HERALD_LLM_MODEL` | claude-haiku-4-5-20251001 | LLM model |
 | `HN_HERALD_LLM_CACHE_TYPE` | sqlite | Cache backend (not implemented) |
 | `HN_HERALD_MAX_CONCURRENT_FETCHES` | 10 | Parallel requests |
 | `HN_HERALD_SUMMARY_BATCH_SIZE` | 5 | Articles per LLM call |
@@ -1086,7 +1085,6 @@ settings = get_settings()
 # Used throughout application
 llm = ChatAnthropic(
     model=settings.llm_model,
-    temperature=settings.llm_temperature,
 )
 ```
 
@@ -1231,7 +1229,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 # Optional (with defaults)
 HN_HERALD_ENV=development
-HN_HERALD_LLM_MODEL=claude-3-5-haiku-20241022
+HN_HERALD_LLM_MODEL=claude-haiku-4-5
 # HN_HERALD_LLM_CACHE_TYPE=sqlite  # Config exists but caching not implemented
 HN_HERALD_MAX_CONCURRENT_FETCHES=10
 HN_HERALD_SUMMARY_BATCH_SIZE=5
@@ -1397,7 +1395,7 @@ print(f"Fetched {len(result['stories'])} stories")
 > A: The LLM summarization is the bottleneck (~15-30s). Note: Caching is not currently implemented, so each request makes fresh API calls.
 
 **Q: Can I use a different LLM model?**
-> A: Yes, set `HN_HERALD_LLM_MODEL` to any Claude model (e.g., `claude-3-opus-20240229`).
+> A: Yes, set `HN_HERALD_LLM_MODEL` to any Claude model (e.g., `claude-sonnet-4-6`).
 
 **Q: How do I run in mock mode without API calls?**
 > A: Send `{"mock": true}` in the request body, or use the frontend checkbox.

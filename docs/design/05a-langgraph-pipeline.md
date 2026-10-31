@@ -1023,8 +1023,7 @@ HN_HERALD_GRAPH_MAX_CONCURRENCY=10
 
 # LLM settings (inherited from MVP-3)
 ANTHROPIC_API_KEY=sk-ant-...
-LLM_MODEL=claude-sonnet-4-20250514
-LLM_TEMPERATURE=0
+LLM_MODEL=claude-sonnet-4-6
 ```
 
 ### 11.2 Settings Class

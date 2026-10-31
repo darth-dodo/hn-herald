@@ -247,14 +247,17 @@ Use Haiku by default, Sonnet for complex/long articles.
 
 ### Model Configuration
 
+> **Update (2026-10-31)**: `claude-3-5-haiku-20241022` has been retired. The service now
+> uses Claude Haiku 4.5. The Anthropic API no longer accepts sampling parameters
+> (`temperature`, `top_p`, `top_k`), so none are sent.
+
 ```python
 from langchain_anthropic import ChatAnthropic
 
 class LLMService:
-    def __init__(self, model: str = "claude-3-5-haiku-20241022"):
+    def __init__(self, model: str = "claude-haiku-4-5"):
         self.llm = ChatAnthropic(
             model=model,
-            temperature=0,  # Deterministic for consistency
             max_tokens=8192  # Enough for batch responses
         )
 ```
